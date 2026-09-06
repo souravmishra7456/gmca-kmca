@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -17,6 +18,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import useAuthStore from "@/store/authStore";
+import { APP_NAME } from "@/lib/constants";
 
 const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
@@ -80,12 +82,16 @@ export default function LoginForm() {
   return (
     <Card className="w-full max-w-md shadow-lg">
       <CardHeader className="text-center">
-        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-primary text-lg font-bold text-primary-foreground">
-          GK
-        </div>
+        <Image
+          src="/images/gmca-logo.jpg"
+          alt="Gayatri Mandir Cricket Association crest"
+          width={64}
+          height={64}
+          className="mx-auto mb-4 rounded-full"
+        />
         <CardTitle className="text-2xl">Member Login</CardTitle>
         <CardDescription>
-          Sign in to access the GMCA-KMCA member portal
+          Sign in to access the {APP_NAME} member portal
         </CardDescription>
       </CardHeader>
       <CardContent>

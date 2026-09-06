@@ -2,9 +2,9 @@ import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import "./globals.css";
 
 export const metadata = {
-  title: "GMCA-KMCA | Cricket Association",
+  title: "GMCA & KMCA | Cricket Association",
   description:
-    "Gujarat & Maharashtra Cricket Association - Kolhapur Maharashtra Cricket Association Management System",
+    "Gayatri Mandir Cricket Association and Kalyan Mandap Cricket Association member portal.",
 };
 
 export default function RootLayout({ children }) {

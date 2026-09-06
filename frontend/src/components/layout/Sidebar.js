@@ -9,9 +9,10 @@ import {
   Bell,
   UserCog,
   ChartNoAxesCombined,
+  ClipboardCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { APP_NAME } from "@/lib/constants";
+import AssociationBrand from "@/components/shared/AssociationBrand";
 
 const iconMap = {
   LayoutDashboard,
@@ -20,6 +21,7 @@ const iconMap = {
   Bell,
   UserCog,
   ChartNoAxesCombined,
+  ClipboardCheck,
 };
 
 export default function Sidebar({ items, onNavigate, variant = "desktop" }) {
@@ -34,14 +36,12 @@ export default function Sidebar({ items, onNavigate, variant = "desktop" }) {
         !isDesktop && "w-full"
       )}
     >
-      <div className="flex h-16 items-center gap-3 border-b border-white/10 px-6">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">
-          GK
-        </div>
-        <div>
-          <p className="text-sm font-bold leading-tight">{APP_NAME}</p>
-          <p className="text-xs text-sidebar-foreground/70">Member Portal</p>
-        </div>
+      <div className="border-b border-white/10 px-4 py-3">
+        <AssociationBrand
+          compact
+          subtitle="Member Portal"
+          className="text-sidebar-foreground [&_p]:text-sidebar-foreground [&_p:last-child]:text-sidebar-foreground/70"
+        />
       </div>
 
       <nav className="flex-1 space-y-1 p-4">
@@ -69,8 +69,9 @@ export default function Sidebar({ items, onNavigate, variant = "desktop" }) {
       </nav>
 
       <div className="border-t border-white/10 p-4">
-        <p className="text-xs text-sidebar-foreground/60">
-          Gujarat & Maharashtra Cricket Association
+        <p className="text-xs leading-relaxed text-sidebar-foreground/60">
+          Gayatri Mandir Cricket Association<br />
+          Kalyan Mandap Cricket Association
         </p>
       </div>
     </aside>

@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import Sidebar from "@/components/layout/Sidebar";
 import ThemeToggle from "@/components/shared/ThemeToggle";
-import { APP_NAME } from "@/lib/constants";
+import AssociationBrand from "@/components/shared/AssociationBrand";
 import { capitalizeRole } from "@/lib/utils";
 import useAuthStore from "@/store/authStore";
 
@@ -41,11 +41,8 @@ export default function Navbar({ navItems }) {
           </SheetContent>
         </Sheet>
 
-        <Link href="/portal/dashboard" className="flex items-center gap-2 lg:hidden">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-xs font-bold text-primary-foreground">
-            GK
-          </div>
-          <span className="font-semibold">{APP_NAME}</span>
+        <Link href="/portal/dashboard" className="lg:hidden">
+          <AssociationBrand compact subtitle={null} />
         </Link>
       </div>
 

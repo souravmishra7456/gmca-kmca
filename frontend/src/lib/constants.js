@@ -1,6 +1,7 @@
-export const APP_NAME = "GMCA-KMCA";
-export const APP_FULL_NAME =
-  "Gujarat & Maharashtra Cricket Association - Kolhapur Maharashtra Cricket Association";
+export const APP_NAME = "GMCA & KMCA";
+export const GMCA_NAME = "Gayatri Mandir Cricket Association";
+export const KMCA_NAME = "Kalyan Mandap Cricket Association";
+export const APP_FULL_NAME = `${GMCA_NAME} (GMCA) & ${KMCA_NAME} (KMCA)`;
 
 export const ROLES = {
   CHAIRMAN: "chairman",
@@ -19,6 +20,7 @@ export const NAV_ITEMS = [
   { label: "Profile", href: "/portal/profile", icon: "User" },
   { label: "Players", href: "/portal/players", icon: "Users" },
   { label: "Notices", href: "/portal/notices", icon: "Bell" },
+  { label: "Team Selection", href: "/portal/team-selection", icon: "ClipboardCheck" },
 ];
 
 export const CHAIRMAN_NAV_ITEMS = [

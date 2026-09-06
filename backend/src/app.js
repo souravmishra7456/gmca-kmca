@@ -4,6 +4,8 @@ const cookieParser = require("cookie-parser");
 const authRoutes = require("./routes/authRoutes");
 const playerRoutes = require("./routes/playerRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
+const noticeRoutes = require("./routes/noticeRoutes");
+const teamSelectionRoutes = require("./routes/teamSelectionRoutes");
 
 const app = express();
 
@@ -26,6 +28,8 @@ app.get("/", (req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/players", playerRoutes);
 app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/notices", noticeRoutes);
+app.use("/api/team-selections", teamSelectionRoutes);
 
 app.use((req, res) => {
     res.status(404).json({

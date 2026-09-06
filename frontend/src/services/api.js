@@ -35,4 +35,15 @@ export const dashboardAPI = {
   getStats: () => api.get("/dashboard/stats"),
 };
 
+export const noticesAPI = {
+  getAll: (params) => api.get("/notices", { params }),
+  create: (notice) => api.post("/notices", notice),
+};
+
+export const teamSelectionsAPI = {
+  getAll: () => api.get("/team-selections"),
+  create: (selection) => api.post("/team-selections", selection),
+  delete: (selectionId) => api.delete(`/team-selections/${selectionId}`),
+};
+
 export default api;

@@ -9,8 +9,12 @@ async function proxyRequest(request, context) {
 
   const headers = new Headers();
   const contentType = request.headers.get("content-type");
+  const cookie = request.headers.get("cookie");
   if (contentType) {
     headers.set("Content-Type", contentType);
+  }
+  if (cookie) {
+    headers.set("Cookie", cookie);
   }
 
   const fetchOptions = {
@@ -27,9 +31,15 @@ async function proxyRequest(request, context) {
     backendRes.headers.get("content-type") || "application/json";
   const body = await backendRes.text();
 
+  const responseHeaders = new Headers({ "Content-Type": responseContentType });
+  const cookies = backendRes.headers.getSetCookie?.() || [];
+  for (const setCookie of cookies) {
+    responseHeaders.append("Set-Cookie", setCookie);
+  }
+
   const response = new NextResponse(body, {
     status: backendRes.status,
-    headers: { "Content-Type": responseContentType },
+    headers: responseHeaders,
   });
 
   return response;
