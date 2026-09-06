@@ -1,19 +1,23 @@
-const jwt = require("jsonwebtoken");
 const User = require("../models/User");
+const { getSession } = require("../utils/sessionStore");
 
 const authMiddleware = async (req, res, next) => {
     try {
-        const token = req.cookies?.token;
+        const sessionId = req.cookies?.sessionId;
 
-        if (!token) {
+        if (!sessionId) {
             return res.status(401).json({
                 success: false,
                 message: "Not authenticated",
             });
         }
 
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const user = await User.findById(decoded.id).select("-password");
+        const session = getSession(sessionId);
+        if (!session) {
+            return res.status(401).json({ success: false, message: "Not authenticated" });
+        }
+
+        const user = await User.findById(session.userId).select("-password");
 
         if (!user || !user.isActive) {
             return res.status(401).json({

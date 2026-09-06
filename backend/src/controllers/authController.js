@@ -1,6 +1,6 @@
 const User = require("../models/User");
 const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
+const { createSession, deleteSession, SESSION_DURATION_MS } = require("../utils/sessionStore");
 
 const formatUser = (user) => ({
     id: user._id,
@@ -41,15 +41,12 @@ const login = async (req, res) => {
             });
         }
 
-        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-            expiresIn: "7d",
-        });
-
-        res.cookie("token", token, {
+        const sessionId = createSession(user._id);
+        res.cookie("sessionId", sessionId, {
             httpOnly: true,
             sameSite: "lax",
             secure: process.env.NODE_ENV === "production",
-            maxAge: 7 * 24 * 60 * 60 * 1000,
+            maxAge: SESSION_DURATION_MS,
         });
 
         res.status(200).json({
@@ -79,7 +76,11 @@ const getMe = async (req, res) => {
 };
 
 const logout = async (req, res) => {
-    res.clearCookie("token", {
+    const sessionId = req.cookies?.sessionId;
+    if (sessionId) {
+        deleteSession(sessionId);
+    }
+    res.clearCookie("sessionId", {
         httpOnly: true,
         sameSite: "lax",
         secure: process.env.NODE_ENV === "production",
