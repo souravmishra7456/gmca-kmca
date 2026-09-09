@@ -181,7 +181,11 @@ const updatePlayerStats = async (req, res) => {
         if (!updatedBy) {
             return res.status(400).json({ success: false, message: "Updated-by user is required" });
         }
-        const validationError = validateStatistics(statistics);
+        // Strike rate and average are derived on the server, rather than trusting
+        // values supplied by the client. Validate those derived values together
+        // with the editable statistics.
+        const calculatedRates = calculateBattingRates(statistics);
+        const validationError = validateStatistics({ ...statistics, ...calculatedRates });
 
         if (validationError) {
             return res.status(400).json({ success: false, message: validationError });
@@ -209,7 +213,7 @@ const updatePlayerStats = async (req, res) => {
             {
                 $set: {
                     ...statistics,
-                    ...calculateBattingRates(statistics),
+                    ...calculatedRates,
                     updatedBy: editor._id,
                 },
             },
