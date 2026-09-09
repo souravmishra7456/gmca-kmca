@@ -100,12 +100,13 @@ const emptyStats = {
 const formatCount = (value) => Number(value || 0).toLocaleString("en-IN");
 const API_URL = process.env.API_URL || "http://localhost:5000";
 
-export const revalidate = 300;
-
 async function getAssociationStats() {
   try {
     const response = await fetch(`${API_URL}/api/dashboard/stats`, {
-      next: { revalidate },
+      // These totals change whenever a manager saves player statistics, so the
+      // landing page must read the current values instead of serving a cached
+      // five-minute snapshot.
+      cache: "no-store",
     });
 
     if (!response.ok) {
