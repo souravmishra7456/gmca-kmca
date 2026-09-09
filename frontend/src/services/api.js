@@ -20,6 +20,10 @@ api.interceptors.response.use(
 export const authAPI = {
   login: (credentials) => api.post("/auth/login", credentials),
   changePassword: (data) => api.post("/auth/change-password", data),
+  requestPasswordReset: (data) => api.post("/auth/forgot-password", data),
+  getPasswordResetRequests: () => api.get("/auth/password-reset-requests"),
+  approvePasswordReset: (requestId) =>
+    api.post(`/auth/password-reset-requests/${requestId}/approve`),
   getMe: () => api.get("/auth/me"),
   logout: () => api.post("/auth/logout"),
 };

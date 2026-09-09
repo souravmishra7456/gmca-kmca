@@ -8,6 +8,7 @@ import {
   Users,
   Bell,
   UserCog,
+  KeyRound,
   ChartNoAxesCombined,
   ClipboardCheck,
 } from "lucide-react";
@@ -20,6 +21,7 @@ const iconMap = {
   Users,
   Bell,
   UserCog,
+  KeyRound,
   ChartNoAxesCombined,
   ClipboardCheck,
 };

@@ -38,14 +38,11 @@ const useAuthStore = create(persist((set) => ({
   changePassword: async ({ currentPassword, newPassword }) => {
     set({ loading: true });
     try {
-      const user = useAuthStore.getState().user;
-
-      if (!user?.id) {
+      if (!useAuthStore.getState().user?.id) {
         throw new Error("Please log in before changing your password");
       }
 
       const { data } = await authAPI.changePassword({
-        userId: user.id,
         currentPassword,
         newPassword,
       });

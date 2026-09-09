@@ -1,17 +1,49 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import Sidebar from "@/components/layout/Sidebar";
 import Navbar from "@/components/layout/Navbar";
+import LoadingSpinner from "@/components/shared/LoadingSpinner";
 import { NAV_ITEMS, CHAIRMAN_NAV_ITEMS, DIRECTOR_NAV_ITEMS, ROLES } from "@/lib/constants";
 import useAuthStore from "@/store/authStore";
 
 export default function PortalLayout({ children }) {
-  const { user } = useAuthStore();
+  const router = useRouter();
+  const pathname = usePathname();
+  const { user, getCurrentUser } = useAuthStore();
+  const [checkingSession, setCheckingSession] = useState(true);
 
   useEffect(() => {
-    useAuthStore.persist.rehydrate();
-  }, []);
+    let active = true;
+
+    const verifySession = async () => {
+      await useAuthStore.persist.rehydrate();
+      const authenticatedUser = await getCurrentUser();
+
+      if (!active) return;
+
+      if (!authenticatedUser) {
+        router.replace(`/login?redirect=${encodeURIComponent(pathname)}&notice=login-required`);
+        return;
+      }
+
+      setCheckingSession(false);
+    };
+
+    verifySession();
+    return () => {
+      active = false;
+    };
+  }, [getCurrentUser, pathname, router]);
+
+  if (checkingSession) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background px-4">
+        <LoadingSpinner label="Checking your session..." />
+      </div>
+    );
+  }
 
   const navItems =
     user?.role === ROLES.CHAIRMAN

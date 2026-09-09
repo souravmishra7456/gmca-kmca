@@ -14,6 +14,9 @@ export default function PublicHeader() {
         </Link>
 
         <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" className="hidden sm:inline-flex" asChild>
+            <Link href="/about">About</Link>
+          </Button>
           <ThemeToggle />
           <Button asChild>
             <Link href="/login">Member Login</Link>

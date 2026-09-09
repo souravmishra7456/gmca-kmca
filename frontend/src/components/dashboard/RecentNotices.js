@@ -16,10 +16,16 @@ export default function RecentNotices({ notices }) {
           </Link>
         </Button>
       </CardHeader>
-      <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {notices.slice(0, 3).map((notice) => (
-          <NoticeCard key={notice.id} {...notice} />
-        ))}
+      <CardContent>
+        {notices.length ? (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {notices.slice(0, 3).map((notice) => (
+              <NoticeCard key={notice.id} {...notice} />
+            ))}
+          </div>
+        ) : (
+          <p className="py-4 text-sm text-muted-foreground">No notices have been posted yet.</p>
+        )}
       </CardContent>
     </Card>
   );

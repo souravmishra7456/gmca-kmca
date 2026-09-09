@@ -1,6 +1,9 @@
 const User = require("../models/User");
+const PasswordResetRequest = require("../models/PasswordResetRequest");
 const bcrypt = require("bcryptjs");
+const crypto = require("crypto");
 const { createSession, deleteSession, SESSION_DURATION_MS } = require("../utils/sessionStore");
+const { generateTempPassword } = require("../utils/playerHelpers");
 
 const formatUser = (user) => ({
     id: user._id,
@@ -93,12 +96,12 @@ const logout = async (req, res) => {
 
 const changePassword = async (req, res) => {
     try {
-        const { userId, currentPassword, newPassword } = req.body;
+        const { currentPassword, newPassword } = req.body;
 
-        if (!userId || !currentPassword || !newPassword) {
+        if (!currentPassword || !newPassword) {
             return res.status(400).json({
                 success: false,
-                message: "User, current password, and new password are required",
+                message: "Current password and new password are required",
             });
         }
 
@@ -116,7 +119,7 @@ const changePassword = async (req, res) => {
             });
         }
 
-        const user = await User.findById(userId);
+        const user = await User.findById(req.user._id);
 
         if (!user || !user.isActive) {
             return res.status(404).json({
@@ -151,9 +154,184 @@ const changePassword = async (req, res) => {
     }
 };
 
+const requestPasswordReset = async (req, res) => {
+    try {
+        const { username, memberId } = req.body;
+
+        if (!username && !memberId) {
+            return res.status(400).json({
+                success: false,
+                message: "Enter your username or member ID",
+            });
+        }
+
+        const user = await User.findOne({
+            isActive: true,
+            $or: [
+                ...(username ? [{ username: username.trim().toLowerCase() }] : []),
+                ...(memberId ? [{ memberId: memberId.trim().toUpperCase() }] : []),
+            ],
+        });
+
+        // Do not expose whether an account exists to unauthenticated visitors.
+        if (user) {
+            const pendingRequest = await PasswordResetRequest.findOne({
+                user: user._id,
+                status: "pending",
+            });
+
+            if (!pendingRequest) {
+                await PasswordResetRequest.create({ user: user._id });
+            }
+        }
+
+        res.status(201).json({
+            success: true,
+            message: "If the account is registered, the chairman has been notified of the request.",
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+const getPasswordResetRequests = async (req, res) => {
+    try {
+        if (req.user.role !== "chairman") {
+            return res.status(403).json({ success: false, message: "Only the chairman can view password reset requests" });
+        }
+
+        const requests = await PasswordResetRequest.find({ status: "pending" })
+            .populate("user", "name memberId username role isActive")
+            .sort({ createdAt: -1 });
+
+        res.status(200).json({
+            success: true,
+            requests: requests
+                .filter((request) => request.user?.isActive)
+                .map((request) => ({
+                    id: request._id,
+                    requestedAt: request.createdAt,
+                    member: {
+                        id: request.user._id,
+                        name: request.user.name,
+                        memberId: request.user.memberId,
+                        username: request.user.username,
+                        role: request.user.role,
+                    },
+                })),
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+const approvePasswordReset = async (req, res) => {
+    try {
+        if (req.user.role !== "chairman") {
+            return res.status(403).json({ success: false, message: "Only the chairman can approve password reset requests" });
+        }
+
+        const request = await PasswordResetRequest.findOne({
+            _id: req.params.requestId,
+            status: "pending",
+        });
+        if (!request) {
+            return res.status(404).json({ success: false, message: "Pending password reset request not found" });
+        }
+
+        const user = await User.findOne({ _id: request.user, isActive: true });
+        if (!user) {
+            return res.status(404).json({ success: false, message: "Member not found" });
+        }
+
+        const tempPassword = generateTempPassword();
+        user.password = await bcrypt.hash(tempPassword, 10);
+        user.firstLogin = true;
+        await user.save();
+
+        request.status = "approved";
+        request.approvedBy = req.user._id;
+        request.approvedAt = new Date();
+        await request.save();
+
+        res.status(200).json({
+            success: true,
+            message: "Temporary password generated. Share it securely with the member.",
+            tempPassword,
+            member: {
+                id: user._id,
+                name: user.name,
+                memberId: user.memberId,
+                username: user.username,
+            },
+        });
+    } catch (error) {
+        if (error.name === "CastError") {
+            return res.status(404).json({ success: false, message: "Password reset request not found" });
+        }
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+const hasValidChairmanRecoveryKey = (providedKey) => {
+    const configuredKey = process.env.CHAIRMAN_RECOVERY_KEY;
+
+    if (!configuredKey || typeof providedKey !== "string") {
+        return false;
+    }
+
+    const providedBuffer = Buffer.from(providedKey);
+    const configuredBuffer = Buffer.from(configuredKey);
+    return (
+        providedBuffer.length === configuredBuffer.length &&
+        crypto.timingSafeEqual(providedBuffer, configuredBuffer)
+    );
+};
+
+const recoverChairmanPassword = async (req, res) => {
+    try {
+        if (!process.env.CHAIRMAN_RECOVERY_KEY) {
+            return res.status(503).json({
+                success: false,
+                message: "Chairman password recovery is not configured",
+            });
+        }
+
+        if (!hasValidChairmanRecoveryKey(req.get("x-chairman-recovery-key"))) {
+            return res.status(401).json({
+                success: false,
+                message: "Invalid chairman recovery key",
+            });
+        }
+
+        const chairman = await User.findOne({ role: "chairman", isActive: true });
+        if (!chairman) {
+            return res.status(404).json({ success: false, message: "Active chairman account not found" });
+        }
+
+        const tempPassword = generateTempPassword();
+        chairman.password = await bcrypt.hash(tempPassword, 10);
+        chairman.firstLogin = true;
+        await chairman.save();
+
+        res.status(200).json({
+            success: true,
+            message: "Chairman temporary password generated. It must be changed after sign-in.",
+            username: chairman.username,
+            tempPassword,
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 module.exports = {
     login,
     getMe,
     logout,
     changePassword,
+    requestPasswordReset,
+    getPasswordResetRequests,
+    approvePasswordReset,
+    recoverChairmanPassword,
 };

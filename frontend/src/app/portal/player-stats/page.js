@@ -22,6 +22,8 @@ const emptyStats = {
   economy: 0,
   highestScore: 0,
   bestFigures: "0/0",
+  bestFigureWickets: 0,
+  bestFigureRuns: 0,
 };
 
 const fields = [
@@ -29,12 +31,28 @@ const fields = [
   { name: "innings", label: "Innings", whole: true },
   { name: "runs", label: "Runs", whole: true },
   { name: "balls", label: "Balls played", whole: true },
-  { name: "strikeRate", label: "Strike rate", step: "0.01" },
-  { name: "average", label: "Average", step: "0.01" },
   { name: "wickets", label: "Wickets", whole: true },
   { name: "economy", label: "Economy", step: "0.01" },
   { name: "highestScore", label: "Highest score", whole: true },
 ];
+
+const roundToTwoDecimals = (value) => Math.round(value * 100) / 100;
+const calculateBattingRates = ({ runs, balls, innings }) => {
+  const totalRuns = Number(runs) || 0;
+  const ballsPlayed = Number(balls) || 0;
+  const totalInnings = Number(innings) || 0;
+  return {
+    strikeRate: ballsPlayed > 0 ? roundToTwoDecimals((totalRuns / ballsPlayed) * 100) : 0,
+    average: totalInnings > 0 ? roundToTwoDecimals(totalRuns / totalInnings) : 0,
+  };
+};
+
+const parseBestFigures = (value) => {
+  const match = /^(\d{1,2})\/(\d{1,3})$/.exec(String(value || ""));
+  return match
+    ? { bestFigureWickets: Number(match[1]), bestFigureRuns: Number(match[2]) }
+    : { bestFigureWickets: 0, bestFigureRuns: 0 };
+};
 
 export default function PlayerStatsPage() {
   const { user, loading: sessionLoading } = useAuthStore();
@@ -74,7 +92,8 @@ export default function PlayerStatsPage() {
 
   useEffect(() => {
     if (selectedPlayer) {
-      setStats({ ...emptyStats, ...selectedPlayer.statistics });
+      const playerStats = { ...emptyStats, ...selectedPlayer.statistics };
+      setStats({ ...playerStats, ...parseBestFigures(playerStats.bestFigures) });
       setMessage("");
     }
   }, [selectedPlayer]);
@@ -88,6 +107,9 @@ export default function PlayerStatsPage() {
     const parsed = {};
 
     for (const field of fields) {
+      if (stats[field.name] === "") {
+        return `${field.label} is required.`;
+      }
       const value = Number(stats[field.name]);
       if (!Number.isFinite(value) || value < 0 || (field.whole && !Number.isInteger(value))) {
         return `${field.label} must be a non-negative ${field.whole ? "whole number" : "number"}.`;
@@ -96,10 +118,18 @@ export default function PlayerStatsPage() {
     }
 
     if (parsed.highestScore > parsed.runs) return "Highest score cannot be greater than total runs.";
-    if (!/^\d{1,2}\/\d{1,3}$/.test(stats.bestFigures)) return "Best figures must use wickets/runs, for example 4/21.";
-    if (Number(stats.bestFigures.split("/")[0]) > parsed.wickets) return "Best-figures wickets cannot be greater than total wickets.";
+    const bestFigureWickets = Number(stats.bestFigureWickets);
+    const bestFigureRuns = Number(stats.bestFigureRuns);
+    if (!Number.isInteger(bestFigureWickets) || bestFigureWickets < 0 || !Number.isInteger(bestFigureRuns) || bestFigureRuns < 0) {
+      return "Best figures must use non-negative whole numbers.";
+    }
+    if (bestFigureWickets > parsed.wickets) return "Best-figures wickets cannot be greater than total wickets.";
 
-    return { ...parsed, bestFigures: stats.bestFigures.trim() };
+    return {
+      ...parsed,
+      ...calculateBattingRates(parsed),
+      bestFigures: `${bestFigureWickets}/${bestFigureRuns}`,
+    };
   };
 
   const saveStats = async (event) => {
@@ -117,7 +147,7 @@ export default function PlayerStatsPage() {
         ...validatedStats,
         updatedBy: user.id,
       });
-      setStats(data.statistics);
+      setStats({ ...data.statistics, ...parseBestFigures(data.statistics.bestFigures) });
       setPlayers((current) => current.map((player) => (
         player.id === selectedPlayer.id ? { ...player, statistics: data.statistics } : player
       )));
@@ -170,8 +200,23 @@ export default function PlayerStatsPage() {
                   </div>
                 ))}
                 <div className="space-y-2">
-                  <Label htmlFor="bestFigures">Best figures</Label>
-                  <Input id="bestFigures" placeholder="e.g. 4/21" pattern="\d{1,2}/\d{1,3}" value={stats.bestFigures} onChange={(event) => updateValue("bestFigures", event.target.value)} required disabled={saving} />
+                  <Label htmlFor="strikeRate">Strike rate</Label>
+                  <Input id="strikeRate" type="text" value={calculateBattingRates(stats).strikeRate.toFixed(2)} readOnly className="bg-muted" aria-describedby="strike-rate-help" />
+                  <p id="strike-rate-help" className="text-xs text-muted-foreground">Calculated from runs and balls played.</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="average">Average</Label>
+                  <Input id="average" type="text" value={calculateBattingRates(stats).average.toFixed(2)} readOnly className="bg-muted" aria-describedby="average-help" />
+                  <p id="average-help" className="text-xs text-muted-foreground">Calculated from runs and innings.</p>
+                </div>
+                <div className="space-y-2">
+                  <Label>Best figures</Label>
+                  <div className="flex items-center gap-2">
+                    <Input aria-label="Best-figures wickets" type="number" min="0" step="1" value={stats.bestFigureWickets} onChange={(event) => updateValue("bestFigureWickets", event.target.value)} required disabled={saving} />
+                    <span className="font-semibold text-muted-foreground">/</span>
+                    <Input aria-label="Best-figures runs conceded" type="number" min="0" step="1" value={stats.bestFigureRuns} onChange={(event) => updateValue("bestFigureRuns", event.target.value)} required disabled={saving} />
+                  </div>
+                  <p className="text-xs text-muted-foreground">Wickets / runs conceded in the player&apos;s best bowling spell.</p>
                 </div>
               </div>
 

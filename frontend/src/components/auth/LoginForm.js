@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -52,6 +53,7 @@ export default function LoginForm() {
   const searchParams = useSearchParams();
   const { login } = useAuthStore();
   const [error, setError] = useState("");
+  const loginRequired = searchParams.get("notice") === "login-required";
 
   const {
     register,
@@ -95,6 +97,11 @@ export default function LoginForm() {
         </CardDescription>
       </CardHeader>
       <CardContent>
+        {loginRequired && (
+          <div className="mb-4 rounded-lg bg-primary/10 px-4 py-3 text-sm text-foreground">
+            You need to log in first to access the member portal.
+          </div>
+        )}
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="username">Username</Label>
@@ -142,6 +149,13 @@ export default function LoginForm() {
               </>
             )}
           </Button>
+
+          <p className="text-center text-sm text-muted-foreground">
+            Forgot your password?{" "}
+            <Link href="/forgot-password" className="font-medium text-primary hover:underline">
+              Request a reset
+            </Link>
+          </p>
         </form>
       </CardContent>
     </Card>

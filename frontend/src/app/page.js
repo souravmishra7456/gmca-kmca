@@ -166,6 +166,9 @@ export default async function HomePage() {
               >
                 <Link href="#notices">Latest Notices</Link>
               </Button>
+              <Button size="lg" variant="outline" asChild>
+                <Link href="/about">About the Association</Link>
+              </Button>
             </div>
           </div>
           <div className="relative overflow-hidden rounded-3xl border bg-card p-2 shadow-2xl">

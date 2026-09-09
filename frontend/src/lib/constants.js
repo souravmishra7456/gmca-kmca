@@ -27,6 +27,7 @@ export const CHAIRMAN_NAV_ITEMS = [
   ...NAV_ITEMS,
   { label: "Manage Stats", href: "/portal/player-stats", icon: "ChartNoAxesCombined" },
   { label: "Manage Members", href: "/portal/members", icon: "UserCog" },
+  { label: "Password Requests", href: "/portal/password-requests", icon: "KeyRound" },
 ];
 
 export const DIRECTOR_NAV_ITEMS = [

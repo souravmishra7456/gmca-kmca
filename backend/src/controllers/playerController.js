@@ -128,7 +128,7 @@ const getPlayers = async (req, res) => {
 };
 
 const statFields = [
-    "matches", "innings", "runs", "balls", "strikeRate", "average",
+    "matches", "innings", "runs", "balls",
     "wickets", "economy", "highestScore", "bestFigures",
 ];
 const wholeNumberFields = ["matches", "innings", "runs", "balls", "wickets", "highestScore"];
@@ -168,9 +168,16 @@ const validateStatistics = (statistics) => {
     return null;
 };
 
+const roundToTwoDecimals = (value) => Math.round(value * 100) / 100;
+
+const calculateBattingRates = ({ runs, balls, innings }) => ({
+    strikeRate: balls > 0 ? roundToTwoDecimals((runs / balls) * 100) : 0,
+    average: innings > 0 ? roundToTwoDecimals(runs / innings) : 0,
+});
+
 const updatePlayerStats = async (req, res) => {
     try {
-        const { updatedBy, ...statistics } = req.body;
+        const { updatedBy, strikeRate, average, ...statistics } = req.body;
         if (!updatedBy) {
             return res.status(400).json({ success: false, message: "Updated-by user is required" });
         }
@@ -199,7 +206,13 @@ const updatePlayerStats = async (req, res) => {
 
         const savedStats = await PlayerStats.findOneAndUpdate(
             { player: player._id },
-            { $set: { ...statistics, updatedBy: editor._id } },
+            {
+                $set: {
+                    ...statistics,
+                    ...calculateBattingRates(statistics),
+                    updatedBy: editor._id,
+                },
+            },
             { new: true, upsert: true, runValidators: true, setDefaultsOnInsert: true }
         );
 
