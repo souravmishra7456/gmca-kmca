@@ -48,6 +48,38 @@ const getTeamSelections = async (req, res) => {
     }
 };
 
+const getPublicTeamSelections = async (_req, res) => {
+    try {
+        const selections = await populateSelection(
+            TeamSelection.find({ announced: true }).sort({ matchDate: -1, createdAt: -1 })
+        ).lean();
+        const publicMember = (member) => member ? { name: member.name, role: member.role } : null;
+        const publicMembers = (members = []) => members.map(publicMember);
+
+        res.status(200).json({
+            success: true,
+            selections: selections.map((selection) => ({
+                id: selection._id,
+                title: selection.title,
+                matchDate: selection.matchDate,
+                type: selection.type,
+                teamSize: selection.teamSize,
+                playingXI: publicMembers(selection.playingXI),
+                substitutes: publicMembers(selection.substitutes),
+                captain: publicMember(selection.captain),
+                teamA: publicMembers(selection.teamA),
+                teamB: publicMembers(selection.teamB),
+                teamACaptain: publicMember(selection.teamACaptain),
+                teamBCaptain: publicMember(selection.teamBCaptain),
+                selectedBy: selection.selectedBy?.name || null,
+                createdAt: selection.createdAt,
+            })),
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 const createTeamSelection = async (req, res) => {
     try {
         if (!["chairman", "director"].includes(req.user.role)) {
@@ -73,8 +105,8 @@ const createTeamSelection = async (req, res) => {
         }
 
         if (type === "match") {
-            if (playingXI.length !== 11 || !unique(playingXI) || !unique(substitutes)) {
-                return res.status(400).json({ success: false, message: "A match selection needs exactly 11 unique players" });
+            if (!unique(playingXI) || !unique(substitutes)) {
+                return res.status(400).json({ success: false, message: "The playing squad and substitutes must not contain duplicate players" });
             }
             if (substitutes.some((memberId) => playingXI.includes(memberId))) {
                 return res.status(400).json({ success: false, message: "A substitute cannot also be in the playing XI" });
@@ -156,4 +188,4 @@ const deleteTeamSelection = async (req, res) => {
     }
 };
 
-module.exports = { getTeamSelections, createTeamSelection, deleteTeamSelection };
+module.exports = { getTeamSelections, getPublicTeamSelections, createTeamSelection, deleteTeamSelection };

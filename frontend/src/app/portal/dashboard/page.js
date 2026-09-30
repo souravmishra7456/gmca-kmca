@@ -15,6 +15,7 @@ import StatsCard from "@/components/shared/StatsCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/utils";
 import { dashboardAPI, noticesAPI, teamSelectionsAPI } from "@/services/api";
+import { getMemberAssignments, isMatchOver, sortSelections } from "@/lib/teamSelections";
 import useAuthStore from "@/store/authStore";
 
 const emptyStats = {
@@ -30,7 +31,7 @@ export default function DashboardPage() {
   const { user } = useAuthStore();
   const [stats, setStats] = useState(emptyStats);
   const [loadingStats, setLoadingStats] = useState(true);
-  const [upcomingSelection, setUpcomingSelection] = useState(null);
+  const [myUpcomingMatches, setMyUpcomingMatches] = useState([]);
   const [recentNotices, setRecentNotices] = useState([]);
   const [upcomingMatches, setUpcomingMatches] = useState([]);
 
@@ -49,35 +50,21 @@ export default function DashboardPage() {
       const loadUpcomingSelection = async () => {
         try {
           const { data } = await teamSelectionsAPI.getAll();
-          const selections = data.selections || [];
+          const selections = sortSelections(data.selections || []);
           const memberId = String(user?.id || "");
-          const selection = selections.find((item) => {
-            const assignedTo = [
-              ["Playing XI", item.playingXI],
-              ["Substitute", item.substitutes],
-              ["Team A", item.teamA],
-              ["Team B", item.teamB],
-            ].filter(([, members]) => members?.some((member) => String(member.id) === memberId));
-
-            if (!assignedTo.length) {
-              return false;
-            }
-
-            item.assignments = assignedTo.map(([assignment]) => assignment);
-            return true;
-          });
-          setUpcomingSelection(selection || null);
-
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
+          setMyUpcomingMatches(
+            selections
+              .filter((item) => !isMatchOver(item.matchDate))
+              .map((item) => ({ ...item, assignments: getMemberAssignments(item, memberId) }))
+              .filter((item) => item.assignments.length > 0)
+          );
           setUpcomingMatches(
             selections
-              .filter((item) => item.announced && new Date(item.matchDate) >= today)
-              .sort((a, b) => new Date(a.matchDate) - new Date(b.matchDate))
+              .filter((item) => item.announced && !isMatchOver(item.matchDate))
               .slice(0, 3)
           );
         } catch {
-          setUpcomingSelection(null);
+          setMyUpcomingMatches([]);
           setUpcomingMatches([]);
         }
       };
@@ -121,18 +108,22 @@ export default function DashboardPage() {
 
       {loadingStats ? (
         <SelectionBannerSkeleton />
-      ) : upcomingSelection && (
+      ) : myUpcomingMatches.length > 0 && (
         <div className="rounded-xl border border-primary/20 bg-primary/10 p-5">
-          <div className="flex gap-4">
+          <div className="flex items-start gap-4">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
               <CalendarDays className="h-5 w-5" />
             </div>
-            <div>
-              <p className="font-semibold">Congratulations — you&apos;ve been selected!</p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                You are in <span className="font-medium text-foreground">{upcomingSelection.title}</span> on {formatDate(upcomingSelection.matchDate)}
-                {upcomingSelection.assignments?.length ? ` as ${upcomingSelection.assignments.join(" & ")}` : ""}.
-              </p>
+            <div className="min-w-0 flex-1">
+              <p className="font-semibold">You&apos;re selected for {myUpcomingMatches.length} upcoming {myUpcomingMatches.length === 1 ? "match" : "matches"}</p>
+              <div className="mt-3 divide-y divide-primary/10">
+                {myUpcomingMatches.map((match) => (
+                  <div key={match.id} className="flex flex-col gap-1 py-2 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between">
+                    <p className="font-medium text-foreground">{match.title}<span className="font-normal text-muted-foreground"> · {formatDate(match.matchDate)}</span></p>
+                    <p className="text-xs text-muted-foreground">{match.assignments.join(" & ")}</p>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>

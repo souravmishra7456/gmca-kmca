@@ -15,10 +15,8 @@ import LatestNotices from "@/components/notices/LatestNotices";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { APP_NAME, APP_FULL_NAME } from "@/lib/constants";
-import {
-  upcomingMatches,
-} from "@/lib/mockData";
 import { formatDate } from "@/lib/utils";
+import { isMatchOver, sortSelections } from "@/lib/teamSelections";
 
 const iconMap = {
   Users,
@@ -120,8 +118,26 @@ async function getAssociationStats() {
   }
 }
 
+async function getPublicSquadAnnouncements() {
+  try {
+    const response = await fetch(`${API_URL}/api/team-selections/public`, { cache: "no-store" });
+    if (!response.ok) return [];
+    const { selections } = await response.json();
+    // The public endpoint already returns announced selections only.
+    return sortSelections(selections || []);
+  } catch {
+    return [];
+  }
+}
+
 export default async function HomePage() {
-  const stats = await getAssociationStats();
+  const [stats, squadAnnouncements] = await Promise.all([
+    getAssociationStats(),
+    getPublicSquadAnnouncements(),
+  ]);
+  const upcomingSquadAnnouncements = squadAnnouncements
+    .filter((match) => !isMatchOver(match.matchDate))
+    .slice(0, 3);
   const associationStats = [
     { label: "Total Members", value: stats.totalMembers, icon: "Users" },
     { label: "Matches Played", value: stats.matchesPlayed, icon: "Trophy" },
@@ -260,28 +276,42 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold sm:text-3xl">Upcoming Matches</h2>
-          <p className="mt-2 text-muted-foreground">
-            Scheduled fixtures and tournaments
-          </p>
-        </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {upcomingMatches.map((match) => (
-            <Card key={match.id} className="transition-shadow hover:shadow-md">
-              <CardHeader>
-                <CardTitle className="text-lg">{match.title}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2 text-sm text-muted-foreground">
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-primary" />
-                  <span>{formatDate(match.date)} at {match.time}</span>
-                </div>
-                <p>{match.venue}</p>
-              </CardContent>
-            </Card>
-          ))}
+      <section className="border-t bg-muted/30 py-16">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold sm:text-3xl">Upcoming Matches</h2>
+            <p className="mt-2 text-muted-foreground">The next three announced matches.</p>
+          </div>
+
+          {upcomingSquadAnnouncements.length ? (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {upcomingSquadAnnouncements.map((match) => {
+                const isIntra = match.type === "intra";
+                return (
+                  <Card key={match.id} className="transition-shadow hover:shadow-md">
+                    <CardHeader>
+                      <CardTitle className="text-lg">{match.title}</CardTitle>
+                      {isIntra ? (
+                        <p className="text-sm text-muted-foreground">
+                          {match.teamACaptain?.name || "Team A"} vs {match.teamBCaptain?.name || "Team B"}
+                        </p>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">
+                          Captain: {match.captain?.name || "Not assigned"}
+                        </p>
+                      )}
+                    </CardHeader>
+                    <CardContent className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Calendar className="h-4 w-4 text-primary" />
+                      <span>{formatDate(match.matchDate)}</span>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          ) : (
+            <Card><CardContent className="p-6 text-sm text-muted-foreground">No upcoming matches announced.</CardContent></Card>
+          )}
         </div>
       </section>
 
