@@ -1,6 +1,7 @@
 const bcrypt = require("bcryptjs");
 const User = require("../models/User");
 const PlayerStats = require("../models/PlayerStats");
+const recordActivity = require("../utils/recordActivity");
 const {
     VALID_ROLES,
     buildUsername,
@@ -11,6 +12,10 @@ const {
 
 const createPlayer = async (req, res) => {
     try {
+        if (!req.user || req.user.role !== "chairman") {
+            return res.status(403).json({ success: false, message: "Only the chairman can create member accounts" });
+        }
+
         const { name, role } = req.body;
         const allowedCreationRoles = ["director", "player"];
 
@@ -56,6 +61,13 @@ const createPlayer = async (req, res) => {
             role,
             firstLogin: true,
             isActive: true,
+        });
+
+        await recordActivity({
+            actor: req.user,
+            action: "Created member account",
+            target: user.name,
+            details: `Created a ${user.role} account (${user.memberId}).`,
         });
 
         res.status(201).json({
@@ -177,10 +189,13 @@ const calculateBattingRates = ({ runs, balls, innings }) => ({
 
 const updatePlayerStats = async (req, res) => {
     try {
-        const { updatedBy, strikeRate, average, ...statistics } = req.body;
-        if (!updatedBy) {
-            return res.status(400).json({ success: false, message: "Updated-by user is required" });
+        if (!req.user || !["chairman", "director"].includes(req.user.role)) {
+            return res.status(403).json({ success: false, message: "Only the chairman or director can update player statistics" });
         }
+        const statistics = { ...req.body };
+        delete statistics.strikeRate;
+        delete statistics.average;
+        delete statistics.updatedBy;
         // Strike rate and average are derived on the server, rather than trusting
         // values supplied by the client. Validate those derived values together
         // with the editable statistics.
@@ -189,14 +204,6 @@ const updatePlayerStats = async (req, res) => {
 
         if (validationError) {
             return res.status(400).json({ success: false, message: validationError });
-        }
-
-        const editor = await User.findOne({ _id: updatedBy, isActive: true }).select("role");
-        if (!editor || !["chairman", "director"].includes(editor.role)) {
-            return res.status(403).json({
-                success: false,
-                message: "Only the chairman or director can update player statistics",
-            });
         }
 
         const player = await User.findOne({
@@ -214,11 +221,18 @@ const updatePlayerStats = async (req, res) => {
                 $set: {
                     ...statistics,
                     ...calculatedRates,
-                    updatedBy: editor._id,
+                    updatedBy: req.user._id,
                 },
             },
             { new: true, upsert: true, runValidators: true, setDefaultsOnInsert: true }
         );
+
+        await recordActivity({
+            actor: req.user,
+            action: "Updated player statistics",
+            target: player.name,
+            details: `${player.memberId}: ${savedStats.matches} matches, ${savedStats.runs} runs, ${savedStats.wickets} wickets; best figures ${savedStats.bestFigures}.`,
+        });
 
         res.status(200).json({
             success: true,
@@ -257,6 +271,12 @@ const demoteDirector = async (req, res) => {
 
         director.role = "player";
         await director.save();
+        await recordActivity({
+            actor: req.user,
+            action: "Demoted director",
+            target: director.name,
+            details: `Changed ${director.memberId} from Director to Player.`,
+        });
 
         res.status(200).json({
             success: true,
@@ -309,6 +329,12 @@ const assignDirector = async (req, res) => {
 
         player.role = "director";
         await player.save();
+        await recordActivity({
+            actor: req.user,
+            action: "Assigned director role",
+            target: player.name,
+            details: `Changed ${player.memberId} from Player to Director.`,
+        });
 
         res.status(200).json({
             success: true,
@@ -331,6 +357,10 @@ const assignDirector = async (req, res) => {
 
 const updatePlayerProfile = async (req, res) => {
     try {
+        if (String(req.user._id) !== String(req.params.playerId) && req.user.role !== "chairman") {
+            return res.status(403).json({ success: false, message: "You can only update your own profile" });
+        }
+
         const { dateOfBirth, birthPlace, battingStyle, bowlingStyle } = req.body;
         const profile = { dateOfBirth, birthPlace, battingStyle, bowlingStyle };
 
@@ -353,10 +383,18 @@ const updatePlayerProfile = async (req, res) => {
             });
         }
 
+        const previousProfile = player.playerProfile?.toObject?.() || player.playerProfile || {};
         player.playerProfile = Object.fromEntries(
             Object.entries(profile).map(([key, value]) => [key, value.trim()])
         );
         await player.save();
+        const changedFields = Object.keys(profile).filter((field) => previousProfile[field] !== profile[field].trim());
+        await recordActivity({
+            actor: req.user,
+            action: "Updated member profile",
+            target: player.name,
+            details: `Changed ${changedFields.join(", ") || "profile details"} for ${player.memberId}.`,
+        });
 
         res.status(200).json({
             success: true,

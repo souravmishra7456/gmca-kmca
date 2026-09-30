@@ -14,6 +14,7 @@ import {
   ClipboardCheck,
   LogOut,
   MoreVertical,
+  History,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import AssociationBrand from "@/components/shared/AssociationBrand";
@@ -30,6 +31,7 @@ const iconMap = {
   KeyRound,
   ChartNoAxesCombined,
   ClipboardCheck,
+  History,
 };
 
 export default function Sidebar({ items, onNavigate, variant = "desktop" }) {
@@ -62,7 +64,7 @@ export default function Sidebar({ items, onNavigate, variant = "desktop" }) {
         />
       </div>
 
-      <nav className="flex-1 space-y-1 p-4">
+      <nav className="flex-1 space-y-1 overflow-y-auto p-4">
         {items.map((item) => {
           const Icon = iconMap[item.icon];
           const isActive = pathname === item.href;

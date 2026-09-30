@@ -4,6 +4,7 @@ const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
 const { createSession, deleteSession, SESSION_DURATION_MS } = require("../utils/sessionStore");
 const { generateTempPassword } = require("../utils/playerHelpers");
+const recordActivity = require("../utils/recordActivity");
 
 const formatUser = (user) => ({
     id: user._id,
@@ -45,6 +46,7 @@ const login = async (req, res) => {
         }
 
         const sessionId = createSession(user._id);
+        await recordActivity({ actor: user, action: "Signed in", target: "Portal" });
         res.cookie("sessionId", sessionId, {
             httpOnly: true,
             sameSite: "lax",
@@ -140,6 +142,7 @@ const changePassword = async (req, res) => {
         user.password = await bcrypt.hash(newPassword, 10);
         user.firstLogin = false;
         await user.save();
+        await recordActivity({ actor: user, action: "Changed password", target: "Account security" });
 
         res.status(200).json({
             success: true,
@@ -257,6 +260,12 @@ const approvePasswordReset = async (req, res) => {
         request.approvedBy = req.user._id;
         request.approvedAt = new Date();
         await request.save();
+        await recordActivity({
+            actor: req.user,
+            action: "Approved password reset",
+            target: user.name,
+            details: `Generated a temporary password for ${user.memberId}.`,
+        });
 
         res.status(200).json({
             success: true,

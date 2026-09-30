@@ -12,9 +12,9 @@ const {
 const authMiddleware = require("../middleware/authMiddleware");
 
 router.get("/", getPlayers);
-router.post("/", createPlayer);
-router.put("/:playerId/profile", updatePlayerProfile);
-router.put("/:playerId/stats", updatePlayerStats);
+router.post("/", authMiddleware, createPlayer);
+router.put("/:playerId/profile", authMiddleware, updatePlayerProfile);
+router.put("/:playerId/stats", authMiddleware, updatePlayerStats);
 router.patch("/:playerId/demote-director", authMiddleware, demoteDirector);
 router.patch("/:playerId/assign-director", authMiddleware, assignDirector);
 

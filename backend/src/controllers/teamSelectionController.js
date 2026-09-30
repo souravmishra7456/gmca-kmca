@@ -1,8 +1,23 @@
 const TeamSelection = require("../models/TeamSelection");
 const User = require("../models/User");
+const recordActivity = require("../utils/recordActivity");
 
 const toIds = (value) => (Array.isArray(value) ? value.map(String) : []);
 const unique = (values) => new Set(values).size === values.length;
+
+const describeSelectionForActivity = async (selection) => {
+    const groups = selection.type === "intra"
+        ? [["Team A", selection.teamA || []], ["Team B", selection.teamB || []]]
+        : [["Playing XI", selection.playingXI || []], ["Substitutes", selection.substitutes || []]];
+    const memberIds = [...new Set(groups.flatMap(([, members]) => members.map(String)))];
+    const members = await User.find({ _id: { $in: memberIds } }).select("name").lean();
+    const namesById = new Map(members.map((member) => [String(member._id), member.name]));
+    const selectionSummary = groups
+        .map(([label, ids]) => `${label}: ${ids.map((id) => namesById.get(String(id)) || "Unknown member").join(", ")}`)
+        .join("; ");
+
+    return `${selection.type === "intra" ? "Intra-match" : "Match squad"} scheduled for ${new Date(selection.matchDate).toLocaleDateString()}. ${selectionSummary}`;
+};
 
 const serializeMember = (member) => ({ id: member._id, name: member.name, role: member.role });
 const serializeSelection = (selection) => ({
@@ -154,6 +169,12 @@ const createTeamSelection = async (req, res) => {
         const populatedSelection = await populateSelection(
             TeamSelection.findById(selection._id)
         );
+        await recordActivity({
+            actor: req.user,
+            action: "Announced team selection",
+            target: selection.title,
+            details: await describeSelectionForActivity(selection),
+        });
 
         res.status(201).json({
             success: true,
@@ -178,6 +199,13 @@ const deleteTeamSelection = async (req, res) => {
         if (!selection) {
             return res.status(404).json({ success: false, message: "Team selection not found" });
         }
+
+        await recordActivity({
+            actor: req.user,
+            action: "Deleted team selection",
+            target: selection.title,
+            details: await describeSelectionForActivity(selection),
+        });
 
         res.status(200).json({ success: true, message: "Team selection deleted" });
     } catch (error) {

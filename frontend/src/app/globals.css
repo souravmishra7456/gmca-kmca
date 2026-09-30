@@ -84,6 +84,27 @@
   border-color: var(--border);
 }
 
+:where(
+  button,
+  a[href],
+  [role="button"],
+  [role="link"],
+  summary,
+  input[type="button"],
+  input[type="submit"],
+  input[type="reset"],
+  input[type="checkbox"],
+  input[type="radio"],
+  select,
+  label[for]
+) {
+  cursor: pointer;
+}
+
+:where(button:disabled, input:disabled, select:disabled, [aria-disabled="true"]) {
+  cursor: not-allowed;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);

@@ -1,4 +1,5 @@
 const Notice = require("../models/Notice");
+const recordActivity = require("../utils/recordActivity");
 
 const serializeNotice = (notice) => ({
     id: notice._id,
@@ -56,6 +57,12 @@ const createNotice = async (req, res) => {
             createdBy: req.user._id,
         });
         await notice.populate("createdBy", "name");
+        await recordActivity({
+            actor: req.user,
+            action: "Published notice",
+            target: notice.title,
+            details: notice.description,
+        });
 
         res.status(201).json({
             success: true,
@@ -83,6 +90,13 @@ const deleteNotice = async (req, res) => {
         if (!notice) {
             return res.status(404).json({ success: false, message: "Notice not found" });
         }
+
+        await recordActivity({
+            actor: req.user,
+            action: "Deleted notice",
+            target: notice.title,
+            details: notice.description,
+        });
 
         res.status(200).json({ success: true, message: "Notice deleted successfully" });
     } catch (error) {

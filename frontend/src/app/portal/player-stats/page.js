@@ -143,7 +143,6 @@ export default function PlayerStatsPage() {
     try {
       const { data } = await playersAPI.updateStats(selectedPlayer.id, {
         ...validatedStats,
-        updatedBy: user.id,
       });
       setStats({ ...data.statistics, ...parseBestFigures(data.statistics.bestFigures) });
       setPlayers((current) => current.map((player) => (

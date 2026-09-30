@@ -53,4 +53,9 @@ export const teamSelectionsAPI = {
   delete: (selectionId) => api.delete(`/team-selections/${selectionId}`),
 };
 
+export const activityAPI = {
+  getAll: () => api.get("/activity-logs"),
+  delete: (activityId) => api.delete(`/activity-logs/${activityId}`),
+};
+
 export default api;
