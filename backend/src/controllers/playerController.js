@@ -233,6 +233,102 @@ const updatePlayerStats = async (req, res) => {
     }
 };
 
+const demoteDirector = async (req, res) => {
+    try {
+        if (req.user.role !== "chairman") {
+            return res.status(403).json({
+                success: false,
+                message: "Only the chairman can change the director role",
+            });
+        }
+
+        const director = await User.findOne({
+            _id: req.params.playerId,
+            role: "director",
+            isActive: true,
+        });
+
+        if (!director) {
+            return res.status(404).json({
+                success: false,
+                message: "Active director not found",
+            });
+        }
+
+        director.role = "player";
+        await director.save();
+
+        res.status(200).json({
+            success: true,
+            message: "Director demoted to player successfully",
+            user: {
+                id: director._id,
+                memberId: director.memberId,
+                name: director.name,
+                role: director.role,
+                username: director.username,
+            },
+        });
+    } catch (error) {
+        if (error.name === "CastError") {
+            return res.status(404).json({ success: false, message: "Director not found" });
+        }
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+const assignDirector = async (req, res) => {
+    try {
+        if (req.user.role !== "chairman") {
+            return res.status(403).json({
+                success: false,
+                message: "Only the chairman can assign the director role",
+            });
+        }
+
+        const currentDirector = await User.exists({ role: "director", isActive: true });
+        if (currentDirector) {
+            return res.status(409).json({
+                success: false,
+                message: "A director is already assigned. Demote them before assigning another member.",
+            });
+        }
+
+        const player = await User.findOne({
+            _id: req.params.playerId,
+            role: "player",
+            isActive: true,
+        });
+
+        if (!player) {
+            return res.status(404).json({
+                success: false,
+                message: "Active player not found",
+            });
+        }
+
+        player.role = "director";
+        await player.save();
+
+        res.status(200).json({
+            success: true,
+            message: "Director assigned successfully",
+            user: {
+                id: player._id,
+                memberId: player.memberId,
+                name: player.name,
+                role: player.role,
+                username: player.username,
+            },
+        });
+    } catch (error) {
+        if (error.name === "CastError") {
+            return res.status(404).json({ success: false, message: "Player not found" });
+        }
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 const updatePlayerProfile = async (req, res) => {
     try {
         const { dateOfBirth, birthPlace, battingStyle, bowlingStyle } = req.body;
@@ -281,4 +377,6 @@ module.exports = {
     getPlayers,
     updatePlayerProfile,
     updatePlayerStats,
+    demoteDirector,
+    assignDirector,
 };

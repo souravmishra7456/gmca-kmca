@@ -33,6 +33,8 @@ export const playersAPI = {
   create: (data) => api.post("/players", data),
   updateProfile: (playerId, data) => api.put(`/players/${playerId}/profile`, data),
   updateStats: (playerId, data) => api.put(`/players/${playerId}/stats`, data),
+  demoteDirector: (playerId) => api.patch(`/players/${playerId}/demote-director`),
+  assignDirector: (playerId) => api.patch(`/players/${playerId}/assign-director`),
 };
 
 export const dashboardAPI = {
