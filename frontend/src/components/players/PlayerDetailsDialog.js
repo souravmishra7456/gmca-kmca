@@ -48,7 +48,7 @@ export default function PlayerDetailsDialog({ player, onClose }) {
               <AvatarFallback className="text-lg">{getInitials(player.name)}</AvatarFallback>
             </Avatar>
             <div className="min-w-0">
-              <h2 id="player-profile-title" className="truncate text-xl font-bold sm:text-2xl">{player.name}</h2>
+              <h2 id="player-profile-title" className="min-w-0 whitespace-normal break-words text-xl font-bold sm:text-2xl">{player.name}</h2>
               <p className="mt-1 text-sm text-muted-foreground">{player.memberId}</p>
               <Badge variant="secondary" className="mt-2">{ROLE_LABELS[player.role] || capitalizeRole(player.role)}</Badge>
             </div>

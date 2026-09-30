@@ -12,7 +12,7 @@ export default function UserCard({ name, memberId, role, status = "active", onSe
         <Avatar className="mb-4 h-16 w-16">
           <AvatarFallback className="text-lg">{getInitials(name)}</AvatarFallback>
         </Avatar>
-        <h3 className="text-lg font-semibold">{name}</h3>
+        <h3 className="w-full min-w-0 whitespace-normal break-words text-lg font-semibold [overflow-wrap:anywhere]">{name}</h3>
         <p className="mt-1 text-sm text-muted-foreground">{memberId}</p>
         <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
           <Badge variant="secondary">{ROLE_LABELS[role] || capitalizeRole(role)}</Badge>

@@ -222,7 +222,7 @@ export default async function HomePage() {
                     <Users className="h-10 w-10" aria-hidden="true" />
                   )}
                 </div>
-                <h3 className="mt-3 line-clamp-1 text-sm font-bold transition-colors group-hover:text-primary">{member.name}</h3>
+                <h3 className="mt-3 w-full min-w-0 whitespace-normal break-words text-sm font-bold [overflow-wrap:anywhere] transition-colors group-hover:text-primary">{member.name}</h3>
               </article>
             ))}
           </div>

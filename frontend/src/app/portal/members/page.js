@@ -403,7 +403,7 @@ export default function MembersPage() {
 
                           <div className="min-w-0">
                             <div className="flex flex-wrap items-center gap-2">
-                              <p className="truncate font-semibold tracking-tight">
+                              <p className="min-w-0 whitespace-normal break-words font-semibold tracking-tight">
                                 {member.name}
                               </p>
 
