@@ -70,4 +70,27 @@ const createNotice = async (req, res) => {
     }
 };
 
-module.exports = { getNotices, createNotice };
+const deleteNotice = async (req, res) => {
+    try {
+        if (!req.user || !["chairman", "director"].includes(req.user.role)) {
+            return res.status(403).json({
+                success: false,
+                message: "Only the chairman or director can delete notices",
+            });
+        }
+
+        const notice = await Notice.findByIdAndDelete(req.params.noticeId);
+        if (!notice) {
+            return res.status(404).json({ success: false, message: "Notice not found" });
+        }
+
+        res.status(200).json({ success: true, message: "Notice deleted successfully" });
+    } catch (error) {
+        if (error.name === "CastError") {
+            return res.status(404).json({ success: false, message: "Notice not found" });
+        }
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+module.exports = { getNotices, createNotice, deleteNotice };

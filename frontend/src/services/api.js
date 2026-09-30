@@ -44,6 +44,7 @@ export const dashboardAPI = {
 export const noticesAPI = {
   getAll: (params) => api.get("/notices", { params }),
   create: (notice) => api.post("/notices", notice),
+  delete: (noticeId) => api.delete(`/notices/${noticeId}`),
 };
 
 export const teamSelectionsAPI = {

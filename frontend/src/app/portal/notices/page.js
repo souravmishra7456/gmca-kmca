@@ -22,6 +22,7 @@ export default function NoticesPage() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [sending, setSending] = useState(false);
+  const [deletingId, setDeletingId] = useState("");
 
   useEffect(() => {
     const loadNotices = async () => {
@@ -57,6 +58,21 @@ export default function NoticesPage() {
   };
 
   const canSend = canSendNotices(user?.role);
+
+  const handleDelete = async (notice) => {
+    if (!window.confirm(`Delete the notice "${notice.title}"?`)) return;
+
+    setDeletingId(notice.id);
+    try {
+      await noticesAPI.delete(notice.id);
+      setNotices((current) => current.filter((item) => item.id !== notice.id));
+      toast.success("Notice deleted.");
+    } catch (requestError) {
+      toast.error(requestError.message || "Unable to delete notice.");
+    } finally {
+      setDeletingId("");
+    }
+  };
 
   return (
     <div className="space-y-8">
@@ -120,7 +136,14 @@ export default function NoticesPage() {
         </Card>
       )}
 
-      {loading ? <LoadingSpinner label="Loading notices..." /> : <NoticesList notices={notices} />}
+      {loading ? <LoadingSpinner label="Loading notices..." /> : (
+        <NoticesList
+          notices={notices}
+          canDelete={canSend}
+          deletingId={deletingId}
+          onDelete={handleDelete}
+        />
+      )}
     </div>
   );
 }
