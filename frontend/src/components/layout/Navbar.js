@@ -2,8 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { LogOut, Menu } from "lucide-react";
+import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -14,14 +13,8 @@ import { capitalizeRole } from "@/lib/utils";
 import useAuthStore from "@/store/authStore";
 
 export default function Navbar({ navItems }) {
-  const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const { user, logout } = useAuthStore();
-
-  const handleLogout = async () => {
-    await logout();
-    router.push("/login");
-  };
+  const { user } = useAuthStore();
 
   return (
     <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b bg-card/80 px-4 backdrop-blur-md lg:px-6">
@@ -55,11 +48,6 @@ export default function Navbar({ navItems }) {
             {capitalizeRole(user?.role)}
           </Badge>
         </div>
-
-        <Button variant="outline" size="sm" onClick={handleLogout}>
-          <LogOut className="h-4 w-4" />
-          <span className="hidden sm:inline">Logout</span>
-        </Button>
       </div>
     </header>
   );

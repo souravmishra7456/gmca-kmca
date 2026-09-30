@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { noticesAPI } from "@/services/api";
 import useAuthStore from "@/store/authStore";
+import { toast } from "sonner";
 
 const canSendNotices = (role) => ["chairman", "director"].includes(role);
 
@@ -20,7 +21,6 @@ export default function NoticesPage() {
   const [showComposer, setShowComposer] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [error, setError] = useState("");
   const [sending, setSending] = useState(false);
 
   useEffect(() => {
@@ -40,7 +40,6 @@ export default function NoticesPage() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    setError("");
     setSending(true);
 
     try {
@@ -49,8 +48,9 @@ export default function NoticesPage() {
       setTitle("");
       setDescription("");
       setShowComposer(false);
+      toast.success("Notice sent to members.");
     } catch (requestError) {
-      setError(requestError.message || "Unable to send notice. Please try again.");
+      toast.error(requestError.message || "Unable to send notice. Please try again.");
     } finally {
       setSending(false);
     }
@@ -106,7 +106,6 @@ export default function NoticesPage() {
                   className="flex w-full resize-y rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 />
               </div>
-              {error && <p className="text-sm text-destructive">{error}</p>}
               <div className="flex flex-wrap gap-3">
                 <Button type="submit" disabled={sending}>
                   {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}

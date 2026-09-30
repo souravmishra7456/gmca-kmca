@@ -13,6 +13,7 @@ import { ROLE_LABELS } from "@/lib/constants";
 import { capitalizeRole, getInitials } from "@/lib/utils";
 import useAuthStore from "@/store/authStore";
 import { playersAPI } from "@/services/api";
+import { toast } from "sonner";
 
 const emptyPersonalDetails = {
   dateOfBirth: "",
@@ -26,7 +27,6 @@ export default function ProfilePage() {
   const [editing, setEditing] = useState(false);
   const [personalDetails, setPersonalDetails] = useState(emptyPersonalDetails);
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState("");
 
   useEffect(() => {
     setPersonalDetails({ ...emptyPersonalDetails, ...user?.playerProfile });
@@ -61,21 +61,19 @@ export default function ProfilePage() {
   const cancelEdit = () => {
     setPersonalDetails({ ...emptyPersonalDetails, ...user.playerProfile });
     setEditing(false);
-    setMessage("");
   };
 
   const savePersonalDetails = async (event) => {
     event.preventDefault();
-    setMessage("");
     setSaving(true);
 
     try {
       const { data } = await playersAPI.updateProfile(user.id, personalDetails);
       setUser({ ...user, playerProfile: data.playerProfile });
       setEditing(false);
-      setMessage("Personal details saved successfully.");
+      toast.success("Personal details saved successfully.");
     } catch (error) {
-      setMessage(error.message || "Unable to save personal details.");
+      toast.error(error.message || "Unable to save personal details.");
     } finally {
       setSaving(false);
     }
@@ -123,12 +121,6 @@ export default function ProfilePage() {
               <span className="font-medium">{field.value}</span>
             </div>
           ))}
-
-          {message && (
-            <p className={`rounded-lg px-4 py-3 text-sm ${message.includes("successfully") ? "bg-accent text-accent-foreground" : "bg-destructive/10 text-destructive"}`}>
-              {message}
-            </p>
-          )}
 
           {editing && (
             <form className="space-y-4 border-t pt-6" onSubmit={savePersonalDetails}>

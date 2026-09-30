@@ -3,11 +3,11 @@
 import { useEffect, useState } from "react";
 import PlayerGrid from "@/components/players/PlayerGrid";
 import { playersAPI } from "@/services/api";
+import { toast } from "sonner";
 
 export default function PlayersPage() {
   const [players, setPlayers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
 
   useEffect(() => {
     const fetchPlayers = async () => {
@@ -15,7 +15,7 @@ export default function PlayersPage() {
         const { data } = await playersAPI.getAll();
         setPlayers(data.players || []);
       } catch (err) {
-        setError(err.message);
+        toast.error(err.message || "Unable to load players.");
       } finally {
         setLoading(false);
       }
@@ -32,12 +32,6 @@ export default function PlayersPage() {
           Browse and search association members
         </p>
       </div>
-
-      {error && (
-        <div className="rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
-          {error}
-        </div>
-      )}
 
       <PlayerGrid players={players} loading={loading} />
     </div>

@@ -10,6 +10,7 @@ import LoadingSpinner from "@/components/shared/LoadingSpinner";
 import { playersAPI } from "@/services/api";
 import { ROLE_LABELS, ROLES } from "@/lib/constants";
 import useAuthStore from "@/store/authStore";
+import { toast } from "sonner";
 
 const emptyStats = {
   matches: 0,
@@ -61,7 +62,6 @@ export default function PlayerStatsPage() {
   const [stats, setStats] = useState(emptyStats);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState("");
 
   const canManageStats = [ROLES.CHAIRMAN, ROLES.DIRECTOR].includes(user?.role);
   const selectedPlayer = useMemo(
@@ -80,7 +80,7 @@ export default function PlayerStatsPage() {
         setPlayers(playerMembers);
         if (playerMembers[0]) setSelectedId(playerMembers[0].id);
       } catch (error) {
-        setMessage(error.message || "Unable to load players.");
+        toast.error(error.message || "Unable to load players.");
       } finally {
         setLoading(false);
       }
@@ -94,7 +94,6 @@ export default function PlayerStatsPage() {
     if (selectedPlayer) {
       const playerStats = { ...emptyStats, ...selectedPlayer.statistics };
       setStats({ ...playerStats, ...parseBestFigures(playerStats.bestFigures) });
-      setMessage("");
     }
   }, [selectedPlayer]);
 
@@ -134,10 +133,9 @@ export default function PlayerStatsPage() {
 
   const saveStats = async (event) => {
     event.preventDefault();
-    setMessage("");
     const validatedStats = validate();
     if (typeof validatedStats === "string") {
-      setMessage(validatedStats);
+      toast.error(validatedStats);
       return;
     }
 
@@ -151,9 +149,9 @@ export default function PlayerStatsPage() {
       setPlayers((current) => current.map((player) => (
         player.id === selectedPlayer.id ? { ...player, statistics: data.statistics } : player
       )));
-      setMessage("Player statistics saved successfully.");
+      toast.success("Player statistics saved successfully.");
     } catch (error) {
-      setMessage(error.message || "Unable to save player statistics.");
+      toast.error(error.message || "Unable to save player statistics.");
     } finally {
       setSaving(false);
     }
@@ -219,8 +217,6 @@ export default function PlayerStatsPage() {
                   <p className="text-xs text-muted-foreground">Wickets / runs conceded in the player&apos;s best bowling spell.</p>
                 </div>
               </div>
-
-              {message && <p className={`rounded-lg px-4 py-3 text-sm ${message.includes("successfully") ? "bg-accent text-accent-foreground" : "bg-destructive/10 text-destructive"}`}>{message}</p>}
 
               <div className="flex justify-end"><Button type="submit" disabled={saving}><Save className="h-4 w-4" />{saving ? "Saving..." : "Save statistics"}</Button></div>
             </form>
