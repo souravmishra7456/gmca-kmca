@@ -173,21 +173,25 @@ const requestPasswordReset = async (req, res) => {
             ],
         });
 
-        // Do not expose whether an account exists to unauthenticated visitors.
-        if (user) {
-            const pendingRequest = await PasswordResetRequest.findOne({
-                user: user._id,
-                status: "pending",
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "No active member matches that username or member ID",
             });
+        }
 
-            if (!pendingRequest) {
-                await PasswordResetRequest.create({ user: user._id });
-            }
+        const pendingRequest = await PasswordResetRequest.findOne({
+            user: user._id,
+            status: "pending",
+        });
+
+        if (!pendingRequest) {
+            await PasswordResetRequest.create({ user: user._id });
         }
 
         res.status(201).json({
             success: true,
-            message: "If the account is registered, the chairman has been notified of the request.",
+            message: "The chairman has been notified of the reset request.",
         });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
