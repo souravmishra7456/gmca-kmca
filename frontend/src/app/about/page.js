@@ -32,14 +32,14 @@ export default async function AboutPage() {
       <PublicHeader />
       <main>
         <section className="border-b bg-gradient-to-br from-primary/10 via-background to-background">
-          <div className="mx-auto grid max-w-7xl items-center gap-10 px-4 py-16 sm:px-6 lg:grid-cols-[1fr_0.9fr] lg:px-8 lg:py-24">
+          <div className="mx-auto grid max-w-7xl items-center gap-10 px-4 py-16 sm:px-6 lg:grid-cols-[0.8fr_1.2fr] lg:gap-12 lg:px-8 lg:py-24">
             <div>
               <p className="text-sm font-semibold uppercase tracking-[0.2em] text-primary">About the association</p>
               <h1 className="mt-3 text-4xl font-bold tracking-tight sm:text-5xl">More than a cricket team.</h1>
               <p className="mt-6 max-w-2xl text-lg leading-relaxed text-muted-foreground">{APP_FULL_NAME} brings members together through competitive cricket, practice, and a shared commitment to sportsmanship.</p>
             </div>
-            <div className="relative overflow-hidden rounded-3xl border bg-card p-2 shadow-xl">
-              <Image src="/images/gmca-members-hero.jpg" alt="GMCA and KMCA members together" width={1280} height={819} className="aspect-[16/10] w-full rounded-2xl object-cover" />
+            <div className="relative overflow-hidden rounded-3xl border border-border/70 bg-card p-2 shadow-2xl">
+              <Image src="/images/gmca-members-hero.jpg" alt="GMCA and KMCA members together" width={1280} height={819} sizes="(max-width: 1024px) 100vw, 60vw" className="aspect-[16/10] w-full rounded-2xl object-cover transition-transform duration-500 hover:scale-[1.02]" />
             </div>
           </div>
         </section>
