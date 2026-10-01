@@ -237,7 +237,7 @@ function SelectionCard({ selection, canDelete, deleting, onDelete }) {
 
       <CardContent className="p-5">
         {intraMatch && selection.matchStatus === "completed" ? (
-          <ScoreSummary scorecard={selection.scorecard} selectionId={selection.id} compact returnToPortal />
+          <ScoreSummary scorecard={selection.scorecard} selectionId={selection.id} compact returnTo="team-selection" />
         ) : intraMatch ? (
           <div className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
@@ -271,7 +271,7 @@ function SelectionCard({ selection, canDelete, deleting, onDelete }) {
               </div>
             ))}
           </div>
-          <ScoreSummary scorecard={selection.scorecard} selectionId={selection.id} compact returnToPortal />
+          <ScoreSummary scorecard={selection.scorecard} selectionId={selection.id} compact returnTo="team-selection" />
           {canDelete && <Button asChild variant="outline" className="rounded-xl"><Link href={`/portal/match-scorer/${selection.id}`}><ClipboardList className="h-4 w-4" />Open Match Scorer</Link></Button>}
           </div>
         ) : (

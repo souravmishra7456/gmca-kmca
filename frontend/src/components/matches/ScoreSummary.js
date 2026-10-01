@@ -9,7 +9,7 @@ export function MatchStatusBadgeText({ match }) {
   return null;
 }
 
-export default function ScoreSummary({ scorecard, compact = false, selectionId, returnToPortal = false }) {
+export default function ScoreSummary({ scorecard, compact = false, selectionId, returnTo = "home" }) {
   if (!scorecard?.innings?.length) return null;
   return (
     <div className={`rounded-xl border border-primary/20 bg-primary/[0.035] ${compact ? "p-3" : "p-4"}`}>
@@ -25,7 +25,7 @@ export default function ScoreSummary({ scorecard, compact = false, selectionId, 
       {scorecard.status === "completed" && scorecard.innings.length === 2 && (
         <p className="mt-2 text-sm font-semibold text-primary">{scorecard.innings[0].runs === scorecard.innings[1].runs ? "Match tied" : scorecard.innings[0].runs > scorecard.innings[1].runs ? `Team ${scorecard.innings[0].battingTeam} won by ${scorecard.innings[0].runs - scorecard.innings[1].runs} runs` : `Team ${scorecard.innings[1].battingTeam} won by ${Math.max(1, (scorecard.teamSize || 2) - 1 - scorecard.innings[1].wickets)} wickets`}</p>
       )}
-      {selectionId && <Link href={`/scoreboard/${selectionId}${returnToPortal ? "?from=portal" : ""}`} className="mt-3 inline-flex min-h-10 items-center justify-center rounded-lg border border-primary/20 bg-background px-3 py-2 text-sm font-semibold text-primary transition-colors hover:border-primary/40 hover:bg-primary/[0.04]">View scoreboard</Link>}
+      {selectionId && <Link href={`/scoreboard/${selectionId}${returnTo !== "home" ? `?from=${returnTo}` : ""}`} className="mt-3 inline-flex min-h-10 items-center justify-center rounded-lg border border-primary/20 bg-background px-3 py-2 text-sm font-semibold text-primary transition-colors hover:border-primary/40 hover:bg-primary/[0.04]">View scoreboard</Link>}
     </div>
   );
 }

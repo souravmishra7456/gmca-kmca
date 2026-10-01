@@ -18,8 +18,12 @@ async function getScoreboard(selectionId) {
 export default async function PublicScoreboardPage({ params, searchParams }) {
   const { selectionId } = await params;
   const { from } = await searchParams;
-  const backHref = from === "portal" ? "/portal/team-selection" : "/";
-  const backLabel = from === "portal" ? "Team Selection" : "Home";
+  const returnDestinations = {
+    portal: { href: "/portal/team-selection", label: "Team Selection" },
+    "team-selection": { href: "/portal/team-selection", label: "Team Selection" },
+    dashboard: { href: "/portal/dashboard", label: "Dashboard" },
+  };
+  const { href: backHref, label: backLabel } = returnDestinations[from] || { href: "/", label: "Home" };
   const result = await getScoreboard(selectionId);
   if (!result?.success) return <main className="mx-auto max-w-xl px-4 py-16 text-center"><p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">Match scoreboard</p><h1 className="mt-2 text-2xl font-bold">Scoreboard unavailable</h1><p className="mt-2 text-sm text-muted-foreground">This match has no published scorecard yet.</p><Button asChild className="mt-5 rounded-xl"><Link href={backHref}><ArrowLeft className="h-4 w-4" />Return to {backLabel}</Link></Button></main>;
 

@@ -49,12 +49,12 @@ export default function UpcomingMatches({ matches, results = [] }) {
                 </div>
               )}
               {match.selectedBy && <p className="border-t pt-3 text-xs">Announced by {match.selectedBy}</p>}
-              {match.scorecard && <div className="mt-3"><ScoreSummary scorecard={match.scorecard} selectionId={match.id} compact /></div>}
+              {match.scorecard && <div className="mt-3"><ScoreSummary scorecard={match.scorecard} selectionId={match.id} compact returnTo="dashboard" /></div>}
             </div>
           </div>
           ))}
         </div> : <p className="py-4 text-sm text-muted-foreground">No upcoming squads have been announced yet.</p>}
-        {results.length > 0 && <div className="mt-6"><h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Recent results</h3><div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">{results.map((match) => <article key={match.id} className="rounded-xl border bg-background p-4"><div className="mb-3 flex items-start justify-between gap-3"><h4 className="font-semibold">{match.title}</h4><span className="shrink-0 rounded-full bg-primary/10 px-2 py-1 text-[11px] font-semibold text-primary">Completed</span></div><p className="mb-3 text-xs text-muted-foreground">{formatDate(match.matchDate)}</p><ScoreSummary scorecard={match.scorecard} selectionId={match.id} compact /></article>)}</div></div>}
+        {results.length > 0 && <div className="mt-6"><h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Recent results</h3><div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">{results.map((match) => <article key={match.id} className="rounded-xl border bg-background p-4"><div className="mb-3 flex items-start justify-between gap-3"><h4 className="font-semibold">{match.title}</h4><span className="shrink-0 rounded-full bg-primary/10 px-2 py-1 text-[11px] font-semibold text-primary">Completed</span></div><p className="mb-3 text-xs text-muted-foreground">{formatDate(match.matchDate)}</p><ScoreSummary scorecard={match.scorecard} selectionId={match.id} compact returnTo="dashboard" /></article>)}</div></div>}
       </CardContent>
     </Card>
   );
