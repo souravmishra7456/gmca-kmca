@@ -1,4 +1,5 @@
 const TeamSelection = require("../models/TeamSelection");
+const IntraMatchScorecard = require("../models/IntraMatchScorecard");
 const User = require("../models/User");
 const recordActivity = require("../utils/recordActivity");
 
@@ -20,7 +21,20 @@ const describeSelectionForActivity = async (selection) => {
 };
 
 const serializeMember = (member) => ({ id: member._id, name: member.name, role: member.role });
-const serializeSelection = (selection) => ({
+const summarizeScorecard = (scorecard, teamSize) => scorecard ? ({
+    status: scorecard.status,
+    statsApplied: Boolean(scorecard.statsApplied),
+    oversLimit: scorecard.oversLimit,
+    teamSize,
+    innings: (scorecard.innings || []).map((innings) => ({
+        battingTeam: innings.battingTeam,
+        runs: innings.runs,
+        wickets: innings.wickets,
+        legalBalls: innings.legalBalls,
+    })),
+}) : null;
+
+const serializeSelection = (selection, scorecard) => ({
     id: selection._id,
     title: selection.title,
     matchDate: selection.matchDate,
@@ -34,6 +48,8 @@ const serializeSelection = (selection) => ({
     teamACaptain: selection.teamACaptain ? serializeMember(selection.teamACaptain) : null,
     teamBCaptain: selection.teamBCaptain ? serializeMember(selection.teamBCaptain) : null,
     announced: selection.announced,
+    matchStatus: scorecard?.status || null,
+    scorecard: summarizeScorecard(scorecard, selection.teamSize),
     selectedBy: selection.selectedBy?.name || null,
     createdAt: selection.createdAt,
 });
@@ -53,10 +69,14 @@ const getTeamSelections = async (req, res) => {
         const selections = await populateSelection(
             TeamSelection.find().sort({ matchDate: -1, createdAt: -1 })
         ).lean();
+        const scorecards = await IntraMatchScorecard.find({ selection: { $in: selections.filter((item) => item.type === "intra").map((item) => item._id) } })
+            .select("selection status statsApplied oversLimit innings.battingTeam innings.runs innings.wickets innings.legalBalls")
+            .lean();
+        const scorecardBySelection = new Map(scorecards.map((scorecard) => [String(scorecard.selection), scorecard]));
 
         res.status(200).json({
             success: true,
-            selections: selections.map(serializeSelection),
+            selections: selections.map((selection) => serializeSelection(selection, scorecardBySelection.get(String(selection._id)))),
         });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -68,6 +88,10 @@ const getPublicTeamSelections = async (_req, res) => {
         const selections = await populateSelection(
             TeamSelection.find({ announced: true }).sort({ matchDate: -1, createdAt: -1 })
         ).lean();
+        const scorecards = await IntraMatchScorecard.find({ selection: { $in: selections.filter((item) => item.type === "intra").map((item) => item._id) } })
+            .select("selection status statsApplied oversLimit innings.battingTeam innings.runs innings.wickets innings.legalBalls")
+            .lean();
+        const scorecardBySelection = new Map(scorecards.map((scorecard) => [String(scorecard.selection), scorecard]));
         const publicMember = (member) => member ? { name: member.name, role: member.role } : null;
         const publicMembers = (members = []) => members.map(publicMember);
 
@@ -78,6 +102,8 @@ const getPublicTeamSelections = async (_req, res) => {
                 title: selection.title,
                 matchDate: selection.matchDate,
                 type: selection.type,
+                matchStatus: scorecardBySelection.get(String(selection._id))?.status || null,
+                scorecard: summarizeScorecard(scorecardBySelection.get(String(selection._id)), selection.teamSize),
                 teamSize: selection.teamSize,
                 playingXI: publicMembers(selection.playingXI),
                 substitutes: publicMembers(selection.substitutes),

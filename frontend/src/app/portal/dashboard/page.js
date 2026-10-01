@@ -34,6 +34,7 @@ export default function DashboardPage() {
   const [myUpcomingMatches, setMyUpcomingMatches] = useState([]);
   const [recentNotices, setRecentNotices] = useState([]);
   const [upcomingMatches, setUpcomingMatches] = useState([]);
+  const [completedMatches, setCompletedMatches] = useState([]);
 
   useEffect(() => {
     const loadDashboard = async () => {
@@ -54,18 +55,20 @@ export default function DashboardPage() {
           const memberId = String(user?.id || "");
           setMyUpcomingMatches(
             selections
-              .filter((item) => !isMatchOver(item.matchDate))
+              .filter((item) => !isMatchOver(item))
               .map((item) => ({ ...item, assignments: getMemberAssignments(item, memberId) }))
               .filter((item) => item.assignments.length > 0)
           );
           setUpcomingMatches(
             selections
-              .filter((item) => item.announced && !isMatchOver(item.matchDate))
+              .filter((item) => item.announced && !isMatchOver(item))
               .slice(0, 3)
           );
+          setCompletedMatches(selections.filter((item) => item.matchStatus === "completed").slice(0, 3));
         } catch {
           setMyUpcomingMatches([]);
           setUpcomingMatches([]);
+          setCompletedMatches([]);
         }
       };
 
@@ -139,7 +142,7 @@ export default function DashboardPage() {
 
       {loadingStats ? <DashboardSectionsSkeleton /> : <>
         <RecentNotices notices={recentNotices} />
-        <UpcomingMatches matches={upcomingMatches} />
+        <UpcomingMatches matches={upcomingMatches} results={completedMatches} />
       </>}
     </div>
   );

@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 import PublicHeader from "@/components/layout/PublicHeader";
 import LatestNotices from "@/components/notices/LatestNotices";
+import VerseSection from "@/components/shared/VerseSection";
+import ScoreSummary from "@/components/matches/ScoreSummary";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { APP_NAME, APP_FULL_NAME } from "@/lib/constants";
 import { formatDate } from "@/lib/utils";
@@ -136,7 +138,10 @@ export default async function HomePage() {
     getPublicSquadAnnouncements(),
   ]);
   const upcomingSquadAnnouncements = squadAnnouncements
-    .filter((match) => !isMatchOver(match.matchDate))
+    .filter((match) => !isMatchOver(match))
+    .slice(0, 3);
+  const completedMatchResults = squadAnnouncements
+    .filter((match) => match.matchStatus === "completed")
     .slice(0, 3);
   const associationStats = [
     { label: "Active Members", value: stats.totalMembers, icon: "Users", desc: "Players and association staff" },
@@ -151,7 +156,7 @@ export default async function HomePage() {
 
       <section className="relative isolate overflow-hidden border-b border-border/50 bg-gradient-to-br from-primary/10 via-background to-background">
         <div aria-hidden="true" className="pointer-events-none absolute -right-40 -top-40 -z-10 h-[38rem] w-[38rem] rounded-full bg-primary/10 blur-3xl" />
-        <div className="mx-auto grid max-w-7xl items-center gap-5 px-4 py-14 sm:px-6 sm:py-16 lg:grid-cols-[1.1fr_0.9fr] lg:gap-12 lg:px-8 lg:py-20">
+        <div className="mx-auto grid min-h-[calc(100svh-4rem)] max-w-7xl items-center gap-5 px-4 py-10 sm:px-6 sm:py-12 lg:grid-cols-[1.1fr_0.9fr] lg:gap-12 lg:px-8 lg:py-16">
           <div className="order-2 pb-2 text-center lg:order-1 lg:py-10 lg:text-left">
             <p lang="or" className="text-sm font-bold tracking-[0.08em] text-primary sm:text-base">ପରମ୍ପରା • ମର୍ଯ୍ୟାଦା • ନିଷ୍ଠା</p>
             <p className="mt-1 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground sm:text-sm">Tradition. Character. Commitment.</p>
@@ -161,25 +166,21 @@ export default async function HomePage() {
             <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg lg:mx-0 lg:mt-5 lg:text-xl">
               Bringing players together through organized leagues, member development, and a shared love of the game.
             </p>
-            <blockquote className="mx-auto mt-8 max-w-xl text-center sm:mt-9 lg:mx-0 lg:text-left">
-              <p lang="sa" className="font-serif text-base font-bold leading-[1.9] text-foreground sm:text-lg lg:text-xl" style={{ fontFamily: "'Noto Serif Devanagari', 'Nirmala UI', 'Kohinoor Devanagari', serif" }}>
-                कर्मण्येवाधिकारस्ते मा फलेषु कदाचन।<br />मा कर्मफलहेतुर्भूर्मा ते सङ्गोऽस्त्वकर्मणि॥
-              </p>
-              <p className="mt-3 text-xs italic leading-relaxed text-muted-foreground sm:text-sm">“Act without attachment to rewards; do not become attached to inaction.” <cite className="not-italic">~ Shri Krishna · Bhagavad Gita 2.47</cite></p>
-            </blockquote>
           </div>
           <div className="order-1 flex justify-center lg:order-2">
             <div className="relative flex h-44 w-44 items-center justify-center sm:h-56 sm:w-56 lg:h-72 lg:w-72">
               <div aria-hidden="true" className="absolute inset-0 rounded-full bg-primary/10 blur-2xl" />
               <div aria-hidden="true" className="absolute inset-2 rounded-full border border-primary/15" />
               <div aria-hidden="true" className="absolute inset-7 rounded-full border border-primary/10" />
-              <div className="relative h-32 w-32 overflow-hidden rounded-full border border-primary/15 bg-white p-2.5 shadow-[0_18px_55px_rgba(22,101,52,0.2)] sm:h-40 sm:w-40 sm:p-3 lg:h-52 lg:w-52 lg:p-4">
-                <Image src="/images/gmca-logo.jpg" alt="GMCA and KMCA association crest" fill preload sizes="(max-width: 640px) 128px, (max-width: 1024px) 160px, 208px" className="object-contain p-2" />
+              <div className="relative h-32 w-32 overflow-hidden rounded-full border border-primary/15 bg-white shadow-[0_18px_55px_rgba(22,101,52,0.2)] sm:h-40 sm:w-40 lg:h-52 lg:w-52">
+                <Image src="/images/gmca-logo.jpg" alt="GMCA and KMCA association crest" fill preload sizes="(max-width: 640px) 128px, (max-width: 1024px) 160px, 208px" className="rounded-full object-cover" />
               </div>
             </div>
           </div>
         </div>
       </section>
+
+      <VerseSection />
 
       <section className="border-b border-border/50 bg-muted/20 py-14 sm:py-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -256,7 +257,7 @@ export default async function HomePage() {
                 const isIntra = match.type === "intra";
                 return (
                   <Card key={match.id} className="overflow-hidden border-border/70 transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-xl">
-                    <div className="flex items-center justify-between gap-3 border-b bg-muted/40 px-5 py-3 text-xs font-semibold"><span className="inline-flex items-center gap-1.5 text-primary"><Flame className="h-3.5 w-3.5" />{isIntra ? "Intra-club fixture" : "Match squad"}</span><span className="text-muted-foreground">{formatDate(match.matchDate)}</span></div>
+                    <div className="flex items-center justify-between gap-3 border-b bg-muted/40 px-5 py-3 text-xs font-semibold"><span className="inline-flex items-center gap-1.5 text-primary"><Flame className="h-3.5 w-3.5" />{isIntra ? "Intra-club fixture" : "Match squad"}</span><span className="text-muted-foreground">{match.matchStatus === "live" || match.matchStatus === "innings-break" ? "In progress · " : ""}{formatDate(match.matchDate)}</span></div>
                     <CardHeader className="p-5 pb-3">
                       <CardTitle className="text-base font-bold">{match.title}</CardTitle>
                       {isIntra ? (
@@ -270,6 +271,7 @@ export default async function HomePage() {
                       )}
                     </CardHeader>
                     <CardContent className="pt-0">
+                      {match.scorecard && <ScoreSummary scorecard={match.scorecard} selectionId={match.id} compact />}
                       <div className="mt-3 flex items-center justify-between border-t pt-3 text-xs text-muted-foreground"><span className="inline-flex items-center gap-1.5"><Shield className="h-3.5 w-3.5 text-primary" /> Official selection</span><span className="font-medium">{isIntra ? `${(match.teamA || []).length + (match.teamB || []).length} selected` : `${(match.playingXI || []).length} in squad`}</span></div>
                     </CardContent>
                   </Card>
@@ -282,13 +284,13 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <footer className="border-t border-border/50 bg-card py-10">
-        <div className="mx-auto flex max-w-7xl flex-col items-center gap-3 px-4 text-center sm:px-6 lg:px-8">
-          <div className="relative h-10 w-10 overflow-hidden rounded-full border border-primary/20 bg-background p-1"><Image src="/images/gmca-logo.jpg" alt="GMCA crest" fill sizes="40px" className="object-contain p-1" /></div>
-          <p className="text-sm font-semibold text-foreground">{APP_FULL_NAME}</p>
-          <p className="text-xs text-muted-foreground">&copy; {new Date().getFullYear()} {APP_FULL_NAME}. All rights reserved.</p>
+      {completedMatchResults.length > 0 && <section className="py-16 sm:py-20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="mb-8"><p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Matchday center</p><h2 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">Recent Match Results</h2><p className="mt-2 text-sm text-muted-foreground">Completed intra-match scorecards from the association.</p></div>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">{completedMatchResults.map((match) => <Card key={match.id} className="overflow-hidden border-border/70"><div className="flex items-center justify-between gap-3 border-b bg-muted/40 px-5 py-3 text-xs font-semibold"><span className="text-primary">{match.type === "intra" ? "Intra-club fixture" : "Match squad"}</span><span className="text-muted-foreground">{formatDate(match.matchDate)}</span></div><CardHeader className="p-5 pb-3"><CardTitle className="text-base font-bold">{match.title}</CardTitle></CardHeader><CardContent className="space-y-3 pt-0"><ScoreSummary scorecard={match.scorecard} selectionId={match.id} compact /><p className="text-xs font-semibold text-muted-foreground">Match complete</p></CardContent></Card>)}</div>
         </div>
-      </footer>
+      </section>}
+
     </div>
   );
 }

@@ -53,9 +53,21 @@ export const teamSelectionsAPI = {
   delete: (selectionId) => api.delete(`/team-selections/${selectionId}`),
 };
 
+export const intraMatchScorerAPI = {
+  get: (selectionId) => api.get(`/intra-match-scorer/${selectionId}`),
+  getPublic: (selectionId) => api.get(`/intra-match-scorer/${selectionId}/public`),
+  start: (selectionId, data) => api.post(`/intra-match-scorer/${selectionId}/start`, data),
+  recordDelivery: (selectionId, data) => api.post(`/intra-match-scorer/${selectionId}/deliveries`, data),
+  undoLastDelivery: (selectionId) => api.delete(`/intra-match-scorer/${selectionId}/last-delivery`),
+  startSecondInnings: (selectionId, data) => api.post(`/intra-match-scorer/${selectionId}/second-innings`, data),
+  changeBowler: (selectionId, data) => api.patch(`/intra-match-scorer/${selectionId}/bowler`, data),
+  finalize: (selectionId) => api.post(`/intra-match-scorer/${selectionId}/finalize`),
+};
+
 export const activityAPI = {
   getAll: () => api.get("/activity-logs"),
   delete: (activityId) => api.delete(`/activity-logs/${activityId}`),
+  deleteMany: (ids) => api.delete("/activity-logs/bulk", { data: { ids } }),
 };
 
 export default api;

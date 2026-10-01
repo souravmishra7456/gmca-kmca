@@ -1,4 +1,9 @@
 export function isMatchOver(matchDate, now = new Date()) {
+  if (matchDate && typeof matchDate === "object" && !(matchDate instanceof Date)) {
+    if (matchDate.matchStatus === "completed") return true;
+    if (["live", "innings-break"].includes(matchDate.matchStatus)) return false;
+    matchDate = matchDate.matchDate;
+  }
   const dateOnly = matchDate instanceof Date
     ? matchDate.toISOString().slice(0, 10)
     : String(matchDate).slice(0, 10);
@@ -10,8 +15,8 @@ export function isMatchOver(matchDate, now = new Date()) {
 
 export function sortSelections(selections) {
   return [...selections].sort((a, b) => {
-    const aOver = isMatchOver(a.matchDate);
-    const bOver = isMatchOver(b.matchDate);
+    const aOver = isMatchOver(a);
+    const bOver = isMatchOver(b);
     if (aOver !== bOver) return aOver ? 1 : -1;
 
     const dateDifference = new Date(a.matchDate) - new Date(b.matchDate);

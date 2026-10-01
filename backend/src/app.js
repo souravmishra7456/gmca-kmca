@@ -6,6 +6,7 @@ const playerRoutes = require("./routes/playerRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
 const noticeRoutes = require("./routes/noticeRoutes");
 const teamSelectionRoutes = require("./routes/teamSelectionRoutes");
+const intraMatchScorerRoutes = require("./routes/intraMatchScorerRoutes");
 const activityLogRoutes = require("./routes/activityLogRoutes");
 
 const app = express();
@@ -31,6 +32,7 @@ app.use("/api/players", playerRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/notices", noticeRoutes);
 app.use("/api/team-selections", teamSelectionRoutes);
+app.use("/api/intra-match-scorer", intraMatchScorerRoutes);
 app.use("/api/activity-logs", activityLogRoutes);
 
 app.use((req, res) => {

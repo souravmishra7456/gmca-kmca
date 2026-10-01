@@ -44,6 +44,7 @@ const playerStatsSchema = new mongoose.Schema(
             ref: "User",
             required: true,
         },
+        appliedMatches: [{ type: mongoose.Schema.Types.ObjectId, ref: "IntraMatchScorecard" }],
     },
     { timestamps: true }
 );

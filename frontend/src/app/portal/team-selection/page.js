@@ -1,12 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CalendarDays, Check, Loader2, Send, Trash2, Users } from "lucide-react";
+import Link from "next/link";
+import { CalendarDays, Check, ClipboardList, Loader2, Send, Trash2, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import ConfirmDialog from "@/components/shared/ConfirmDialog";
+import ScoreSummary, { MatchStatusBadgeText } from "@/components/matches/ScoreSummary";
 import EmptyState from "@/components/shared/EmptyState";
 import LoadingSpinner from "@/components/shared/LoadingSpinner";
 import { formatDate } from "@/lib/utils";
@@ -182,7 +185,7 @@ function CaptainSelect({ id, label, members, value, onChange }) {
 
 function SelectionCard({ selection, canDelete, deleting, onDelete }) {
   const intraMatch = selection.type === "intra";
-  const matchOver = isMatchOver(selection.matchDate);
+  const matchOver = isMatchOver(selection);
 
   return (
     <Card className="group overflow-hidden rounded-2xl border-border/70 shadow-sm transition-shadow hover:shadow-md">
@@ -201,8 +204,8 @@ function SelectionCard({ selection, canDelete, deleting, onDelete }) {
               <span className="text-xs font-medium text-muted-foreground">
                 {formatDate(selection.matchDate)}
               </span>
-              <Badge variant={matchOver ? "secondary" : "outline"} className="rounded-full">
-                {matchOver ? "Match over" : "Upcoming"}
+              <Badge variant={matchOver || selection.matchStatus === "live" ? "secondary" : "outline"} className="rounded-full">
+                {MatchStatusBadgeText({ match: selection }) || (matchOver ? "Match over" : "Upcoming")}
               </Badge>
             </div>
             <CardTitle className="truncate text-xl tracking-tight">
@@ -233,7 +236,10 @@ function SelectionCard({ selection, canDelete, deleting, onDelete }) {
       </CardHeader>
 
       <CardContent className="p-5">
-        {intraMatch ? (
+        {intraMatch && selection.matchStatus === "completed" ? (
+          <ScoreSummary scorecard={selection.scorecard} selectionId={selection.id} compact returnToPortal />
+        ) : intraMatch ? (
+          <div className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
             {[
               {
@@ -264,6 +270,9 @@ function SelectionCard({ selection, canDelete, deleting, onDelete }) {
                 />
               </div>
             ))}
+          </div>
+          <ScoreSummary scorecard={selection.scorecard} selectionId={selection.id} compact returnToPortal />
+          {canDelete && <Button asChild variant="outline" className="rounded-xl"><Link href={`/portal/match-scorer/${selection.id}`}><ClipboardList className="h-4 w-4" />Open Match Scorer</Link></Button>}
           </div>
         ) : (
           <div className="grid gap-4 md:grid-cols-2">
@@ -315,6 +324,7 @@ export default function TeamSelectionPage() {
   const [form, setForm] = useState(initialForm);
   const [submitting, setSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
+  const [pendingDelete, setPendingDelete] = useState(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -358,16 +368,19 @@ export default function TeamSelectionPage() {
     });
   };
 
-  const deleteSelection = async (selectionId) => {
+  const requestDeleteSelection = (selectionId) => {
     const selection = selections.find((item) => item.id === selectionId);
-    if (!window.confirm(`Delete the team selection for ${selection?.title || "this match"}?`)) {
-      return;
-    }
+    if (selection) setPendingDelete(selection);
+  };
 
-    setDeletingId(selectionId);
+  const deleteSelection = async () => {
+    if (!pendingDelete) return;
+    const selection = pendingDelete;
+    setDeletingId(selection.id);
     try {
-      await teamSelectionsAPI.delete(selectionId);
-      setSelections((current) => current.filter((item) => item.id !== selectionId));
+      await teamSelectionsAPI.delete(selection.id);
+      setSelections((current) => current.filter((item) => item.id !== selection.id));
+      setPendingDelete(null);
       toast.success("Team selection deleted.");
     } catch (requestError) {
       toast.error(requestError.message || "Unable to delete this team selection.");
@@ -403,10 +416,10 @@ export default function TeamSelectionPage() {
   const myMatches = orderedSelections
     .map((selection) => ({ ...selection, assignments: getMemberAssignments(selection, user?.id) }))
     .filter((selection) => selection.assignments.length > 0);
-  const upcomingMyMatches = myMatches.filter((selection) => !isMatchOver(selection.matchDate));
-  const completedMyMatches = myMatches.filter((selection) => isMatchOver(selection.matchDate));
-  const upcomingSelections = orderedSelections.filter((selection) => !isMatchOver(selection.matchDate));
-  const completedSelections = orderedSelections.filter((selection) => isMatchOver(selection.matchDate));
+  const upcomingMyMatches = myMatches.filter((selection) => !isMatchOver(selection));
+  const completedMyMatches = myMatches.filter((selection) => isMatchOver(selection));
+  const upcomingSelections = orderedSelections.filter((selection) => !isMatchOver(selection));
+  const completedSelections = orderedSelections.filter((selection) => isMatchOver(selection));
 
   return (
     <div className="space-y-7 pb-10">
@@ -758,7 +771,7 @@ export default function TeamSelectionPage() {
                 selection={selection}
                 canDelete={manager}
                 deleting={deletingId === selection.id}
-                onDelete={deleteSelection}
+                onDelete={requestDeleteSelection}
               />
             ))}
           </div>
@@ -769,6 +782,15 @@ export default function TeamSelectionPage() {
           />
         )}
       </section>
+      <ConfirmDialog
+        open={Boolean(pendingDelete)}
+        onOpenChange={(open) => { if (!open && !deletingId) setPendingDelete(null); }}
+        title="Delete team selection?"
+        description={pendingDelete ? `Delete the team selection for “${pendingDelete.title}”? This cannot be undone.` : ""}
+        confirmLabel="Delete selection"
+        onConfirm={deleteSelection}
+        loading={Boolean(deletingId)}
+      />
     </div>
   )
 }
