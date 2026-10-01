@@ -1,4 +1,5 @@
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
+import SiteFooter from "@/components/layout/SiteFooter";
 import { Toaster } from "sonner";
 import "./globals.css";
 
@@ -22,7 +23,10 @@ export default function RootLayout({ children }) {
           enableSystem
           disableTransitionOnChange
         >
-          {children}
+          <div className="flex min-h-screen flex-col">
+            <div className="flex-1">{children}</div>
+            <SiteFooter />
+          </div>
           <Toaster position="top-right" richColors closeButton />
         </ThemeProvider>
       </body>
