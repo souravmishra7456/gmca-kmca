@@ -56,4 +56,29 @@ const deleteActivityLog = async (req, res) => {
     }
 };
 
-module.exports = { getActivityLogs, deleteActivityLog };
+const deleteActivityLogs = async (req, res) => {
+    try {
+        if (req.user.role !== "chairman") {
+            return res.status(403).json({
+                success: false,
+                message: "Only the chairman can delete portal activity",
+            });
+        }
+
+        const { ids } = req.body;
+        if (!Array.isArray(ids) || ids.length === 0 || ids.length > 200 || ids.some((id) => !mongoose.isValidObjectId(id))) {
+            return res.status(400).json({ success: false, message: "Select between 1 and 200 valid activity entries." });
+        }
+
+        const result = await ActivityLog.deleteMany({ _id: { $in: ids } });
+        return res.status(200).json({
+            success: true,
+            deletedCount: result.deletedCount,
+            message: `${result.deletedCount} activity entries deleted`,
+        });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+module.exports = { getActivityLogs, deleteActivityLog, deleteActivityLogs };

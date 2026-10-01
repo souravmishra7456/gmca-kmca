@@ -1,10 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Activity, History, RefreshCw, Search, Trash2 } from "lucide-react";
+import { Activity, CheckSquare, History, RefreshCw, Search, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import ConfirmDialog from "@/components/shared/ConfirmDialog";
 import { Input } from "@/components/ui/input";
 import EmptyState from "@/components/shared/EmptyState";
 import LoadingSpinner from "@/components/shared/LoadingSpinner";
@@ -24,6 +25,11 @@ export default function ActivityLogPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [deletingId, setDeletingId] = useState("");
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const [error, setError] = useState("");
   const isChairman = user?.role === ROLES.CHAIRMAN;
 
@@ -43,17 +49,44 @@ export default function ActivityLogPage() {
   }, []);
 
   const deleteEntry = async (entry) => {
-    if (!window.confirm(`Delete this activity entry for “${entry.action} — ${entry.target}”?`)) return;
-
     setDeletingId(entry.id);
     setError("");
     try {
       await activityAPI.delete(entry.id);
       setEntries((current) => current.filter((item) => item.id !== entry.id));
+      setSelectedIds((current) => current.filter((id) => id !== entry.id));
+      setDeleteTarget(null);
     } catch (requestError) {
       setError(requestError.message || "Unable to delete this activity entry.");
     } finally {
       setDeletingId("");
+    }
+  };
+
+  const selectVisibleEntries = (checked) => {
+    const visibleIds = filteredEntries.map((entry) => entry.id);
+    setSelectedIds((current) => checked
+      ? Array.from(new Set([...current, ...visibleIds]))
+      : current.filter((id) => !visibleIds.includes(id))
+    );
+  };
+
+  const deleteSelectedEntries = async () => {
+    if (!selectedIds.length) return;
+
+    setBulkDeleting(true);
+    setError("");
+    try {
+      await activityAPI.deleteMany(selectedIds);
+      const removedIds = new Set(selectedIds);
+      setEntries((current) => current.filter((entry) => !removedIds.has(entry.id)));
+      setSelectedIds([]);
+      setSelectionMode(false);
+      setConfirmBulkDelete(false);
+    } catch (requestError) {
+      setError(requestError.message || "Unable to delete the selected activity entries.");
+    } finally {
+      setBulkDeleting(false);
     }
   };
 
@@ -100,11 +133,42 @@ export default function ActivityLogPage() {
             See who made changes across members, statistics, notices, and team selections.
           </p>
         </div>
-        <Button variant="outline" onClick={() => loadEntries(true)} disabled={loading || refreshing}>
-          <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
-          Refresh
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            onClick={() => {
+              setSelectionMode((enabled) => !enabled);
+              setSelectedIds([]);
+              setConfirmBulkDelete(false);
+              setDeleteTarget(null);
+            }}
+            disabled={loading || bulkDeleting}
+          >
+            <CheckSquare className="h-4 w-4" />
+            {selectionMode ? "Cancel selection" : "Select multiple"}
+          </Button>
+          <Button variant="outline" onClick={() => loadEntries(true)} disabled={loading || refreshing || bulkDeleting}>
+            <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
+        </div>
       </div>
+
+      {selectionMode && filteredEntries.length > 0 && (
+        <div className="flex flex-col gap-3 rounded-xl border bg-card p-3 sm:flex-row sm:items-center sm:justify-between sm:px-4">
+          <label className="flex items-center gap-2 text-sm font-medium">
+            <input
+              type="checkbox"
+              className="h-4 w-4 accent-primary"
+              checked={filteredEntries.every((entry) => selectedIds.includes(entry.id))}
+              onChange={(event) => selectVisibleEntries(event.target.checked)}
+              aria-label="Select all visible activity entries"
+            />
+            Select all shown
+            <span className="text-muted-foreground">· {selectedIds.length} selected</span>
+          </label>
+        </div>
+      )}
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative w-full sm:max-w-sm">
@@ -134,7 +198,21 @@ export default function ActivityLogPage() {
         <div className="space-y-3">
           {filteredEntries.map((entry) => (
             <Card key={entry.id} className="overflow-hidden border-border/70 shadow-sm">
-              <CardContent className="flex gap-4 p-4 sm:p-5">
+              <CardContent className="flex gap-3 p-4 sm:gap-4 sm:p-5">
+                {selectionMode && (
+                  <label className="mt-1 shrink-0">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 accent-primary"
+                      checked={selectedIds.includes(entry.id)}
+                      onChange={(event) => setSelectedIds((current) => event.target.checked
+                        ? [...current, entry.id]
+                        : current.filter((id) => id !== entry.id))}
+                      aria-label={`Select activity: ${entry.action} — ${entry.target}`}
+                      disabled={bulkDeleting}
+                    />
+                  </label>
+                )}
                 <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
                   <Activity className="h-5 w-5" />
                 </div>
@@ -151,8 +229,8 @@ export default function ActivityLogPage() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => deleteEntry(entry)}
-                        disabled={Boolean(deletingId)}
+                        onClick={() => { setError(""); setDeleteTarget(entry); }}
+                        disabled={Boolean(deletingId) || bulkDeleting}
                         aria-label={`Delete activity: ${entry.action} — ${entry.target}`}
                         title="Delete activity entry"
                       >
@@ -176,6 +254,33 @@ export default function ActivityLogPage() {
           description={search ? "Try a different name, action, or target." : "Successful portal actions will appear here."}
         />
       )}
+
+      {selectionMode && selectedIds.length > 0 && !loading && (
+        <div className="sticky bottom-3 z-20 flex items-center justify-between gap-3 rounded-xl border bg-card/95 p-3 shadow-lg backdrop-blur sm:p-4">
+          <p className="text-sm font-medium">{selectedIds.length} selected</p>
+          <Button variant="destructive" onClick={() => { setError(""); setConfirmBulkDelete(true); }} disabled={bulkDeleting}>
+            <Trash2 className="h-4 w-4" />
+            Delete selected
+          </Button>
+        </div>
+      )}
+
+      <ConfirmDialog
+        open={Boolean(deleteTarget) || confirmBulkDelete}
+        onOpenChange={(open) => {
+          if (open || deletingId || bulkDeleting) return;
+          setDeleteTarget(null);
+          setConfirmBulkDelete(false);
+        }}
+        title={deleteTarget ? "Delete activity entry?" : "Delete selected activity?"}
+        description={deleteTarget
+          ? <>Delete “{deleteTarget.action} — {deleteTarget.target}”? This cannot be undone.</>
+          : `Delete ${selectedIds.length} selected activity ${selectedIds.length === 1 ? "entry" : "entries"}? This cannot be undone.`}
+        confirmLabel="Confirm delete"
+        onConfirm={() => deleteTarget ? deleteEntry(deleteTarget) : deleteSelectedEntries()}
+        loading={Boolean(deletingId) || bulkDeleting}
+        error={error}
+      />
     </div>
   );
 }

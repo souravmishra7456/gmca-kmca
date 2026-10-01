@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import ConfirmDialog from "@/components/shared/ConfirmDialog";
 import { noticesAPI } from "@/services/api";
 import useAuthStore from "@/store/authStore";
 import { toast } from "sonner";
@@ -23,6 +24,7 @@ export default function NoticesPage() {
   const [description, setDescription] = useState("");
   const [sending, setSending] = useState(false);
   const [deletingId, setDeletingId] = useState("");
+  const [pendingDelete, setPendingDelete] = useState(null);
 
   useEffect(() => {
     const loadNotices = async () => {
@@ -59,13 +61,14 @@ export default function NoticesPage() {
 
   const canSend = canSendNotices(user?.role);
 
-  const handleDelete = async (notice) => {
-    if (!window.confirm(`Delete the notice "${notice.title}"?`)) return;
-
+  const handleDelete = async () => {
+    if (!pendingDelete) return;
+    const notice = pendingDelete;
     setDeletingId(notice.id);
     try {
       await noticesAPI.delete(notice.id);
       setNotices((current) => current.filter((item) => item.id !== notice.id));
+      setPendingDelete(null);
       toast.success("Notice deleted.");
     } catch (requestError) {
       toast.error(requestError.message || "Unable to delete notice.");
@@ -141,9 +144,18 @@ export default function NoticesPage() {
           notices={notices}
           canDelete={canSend}
           deletingId={deletingId}
-          onDelete={handleDelete}
+          onDelete={setPendingDelete}
         />
       )}
+      <ConfirmDialog
+        open={Boolean(pendingDelete)}
+        onOpenChange={(open) => { if (!open && !deletingId) setPendingDelete(null); }}
+        title="Delete notice?"
+        description={pendingDelete ? `Delete “${pendingDelete.title}”? This cannot be undone.` : ""}
+        confirmLabel="Delete notice"
+        onConfirm={handleDelete}
+        loading={Boolean(deletingId)}
+      />
     </div>
   );
 }

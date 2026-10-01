@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import ConfirmDialog from "@/components/shared/ConfirmDialog";
 import { playersAPI } from "@/services/api";
 import { ROLE_LABELS, ROLES } from "@/lib/constants";
 import useAuthStore from "@/store/authStore";
@@ -42,6 +43,7 @@ export default function MembersPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [roleActionId, setRoleActionId] = useState("");
+  const [roleChangeTarget, setRoleChangeTarget] = useState(null);
   const [createdMember, setCreatedMember] = useState(null);
   const [copied, setCopied] = useState("");
 
@@ -128,8 +130,6 @@ export default function MembersPage() {
   };
 
   const handleDemoteDirector = async (member) => {
-    if (!window.confirm(`Demote ${member.name} from Director to Player?`)) return;
-
     setRoleActionId(member.id);
     try {
       const { data } = await playersAPI.demoteDirector(member.id);
@@ -139,16 +139,16 @@ export default function MembersPage() {
           : currentMember
       )));
       toast.success(`${member.name} is now a player. You can assign a new director.`);
+      return true;
     } catch (err) {
       toast.error(err.message || "Unable to demote director.");
+      return false;
     } finally {
       setRoleActionId("");
     }
   };
 
   const handleAssignDirector = async (member) => {
-    if (!window.confirm(`Assign ${member.name} as Director?`)) return;
-
     setRoleActionId(member.id);
     try {
       const { data } = await playersAPI.assignDirector(member.id);
@@ -158,11 +158,21 @@ export default function MembersPage() {
           : currentMember
       )));
       toast.success(`${member.name} is now the director.`);
+      return true;
     } catch (err) {
       toast.error(err.message || "Unable to assign director.");
+      return false;
     } finally {
       setRoleActionId("");
     }
+  };
+
+  const confirmRoleChange = async () => {
+    if (!roleChangeTarget) return;
+    const succeeded = roleChangeTarget.action === "demote"
+      ? await handleDemoteDirector(roleChangeTarget.member)
+      : await handleAssignDirector(roleChangeTarget.member);
+    if (succeeded) setRoleChangeTarget(null);
   };
 
   const copyCredentials = async () => {
@@ -443,7 +453,7 @@ export default function MembersPage() {
                               size="sm"
                               className="ml-auto rounded-lg bg-background sm:ml-1"
                               disabled={Boolean(roleActionId)}
-                              onClick={() => handleDemoteDirector(member)}
+                              onClick={() => setRoleChangeTarget({ member, action: "demote" })}
                             >
                               <UserRoundMinus className="h-4 w-4" />
                               {isActing ? "Demoting..." : "Demote"}
@@ -461,7 +471,7 @@ export default function MembersPage() {
                                 size="sm"
                                 className="ml-auto rounded-lg bg-background sm:ml-1"
                                 disabled={Boolean(roleActionId)}
-                                onClick={() => handleAssignDirector(member)}
+                                onClick={() => setRoleChangeTarget({ member, action: "assign" })}
                               >
                                 <ShieldCheck className="h-4 w-4" />
                                 {isActing ? "Assigning..." : "Assign Director"}
@@ -482,6 +492,18 @@ export default function MembersPage() {
           </Card>
         </div>
       </div>
+      <ConfirmDialog
+        open={Boolean(roleChangeTarget)}
+        onOpenChange={(open) => { if (!open && !roleActionId) setRoleChangeTarget(null); }}
+        title={roleChangeTarget?.action === "demote" ? "Demote director?" : "Assign director?"}
+        description={roleChangeTarget?.action === "demote"
+          ? `Demote ${roleChangeTarget.member.name} from Director to Player?`
+          : `Assign ${roleChangeTarget?.member.name} as Director?`}
+        confirmLabel={roleChangeTarget?.action === "demote" ? "Demote to player" : "Assign director"}
+        confirmVariant={roleChangeTarget?.action === "demote" ? "destructive" : "default"}
+        onConfirm={confirmRoleChange}
+        loading={Boolean(roleActionId)}
+      />
     </div>
   )
 }
