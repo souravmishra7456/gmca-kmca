@@ -2,17 +2,53 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ScoreboardDisplay from "@/components/matches/ScoreboardDisplay";
+import { SITE_URL } from "@/lib/site";
 
 const API_URL = process.env.API_URL || "http://localhost:5000";
 
-async function getScoreboard(selectionId) {
+async function getPublicScoreboard(selectionId) {
   try {
     const response = await fetch(`${API_URL}/api/intra-match-scorer/${selectionId}/public`, { cache: "no-store" });
     if (!response.ok) return null;
-    return response.json();
+    const result = await response.json();
+    return result?.success ? result : null;
   } catch {
     return null;
   }
+}
+
+async function getScoreboard(selectionId) {
+  return getPublicScoreboard(selectionId);
+}
+
+export async function generateMetadata({ params }) {
+  const { selectionId } = await params;
+  const result = await getPublicScoreboard(selectionId);
+
+  if (!result?.selection) {
+    return {
+      title: "Scoreboard unavailable",
+      description: "This match does not have a published public scorecard yet.",
+      robots: { index: false, follow: false },
+    };
+  }
+
+  const { selection, scorecard } = result;
+  const scoreSummary = scorecard?.innings
+    ?.map((innings) => `${innings.battingTeam}: ${innings.runs}/${innings.wickets}`)
+    .join(" · ");
+  const description = [
+    `Live and match scorecard for ${selection.title} from GMCA & KMCA in Khordha, Odisha.`,
+    scoreSummary,
+  ].filter(Boolean).join(" ");
+
+  return {
+    title: `${selection.title} Scorecard`,
+    description,
+    ...(SITE_URL ? { alternates: { canonical: `${SITE_URL}/scoreboard/${encodeURIComponent(selectionId)}` } } : {}),
+    openGraph: { title: `${selection.title} Scorecard | GMCA & KMCA`, description },
+    twitter: { title: `${selection.title} Scorecard | GMCA & KMCA`, description },
+  };
 }
 
 export default async function PublicScoreboardPage({ params, searchParams }) {

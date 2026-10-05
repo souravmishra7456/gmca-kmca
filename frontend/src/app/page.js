@@ -19,6 +19,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { APP_NAME, APP_FULL_NAME } from "@/lib/constants";
 import { formatDate } from "@/lib/utils";
 import { isMatchOver, sortSelections } from "@/lib/teamSelections";
+import { SITE_URL } from "@/lib/site";
+
+export const metadata = {
+  title: "GMCA & KMCA | Cricket in Khordha, Odisha",
+  description:
+    "Official site of Gayatri Mandir Cricket Association and Kalyan Mandap Cricket Association in Khordha, Odisha. Find association updates, team announcements, fixtures, and scorecards.",
+  ...(SITE_URL ? { alternates: { canonical: SITE_URL } } : {}),
+};
 
 const iconMap = {
   Users,

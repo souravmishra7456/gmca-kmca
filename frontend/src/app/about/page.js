@@ -4,6 +4,19 @@ import PublicHeader from "@/components/layout/PublicHeader";
 import AboutGallery from "@/components/about/AboutGallery";
 import { Card, CardContent } from "@/components/ui/card";
 import { APP_FULL_NAME, ROLE_LABELS, ROLES } from "@/lib/constants";
+import { SITE_URL } from "@/lib/site";
+
+export const metadata = {
+  title: "About the Association",
+  description: `${APP_FULL_NAME} brings members together through competitive cricket, practice, and sportsmanship in Khordha, Odisha. Learn about the association and its leadership.`,
+  ...(SITE_URL ? { alternates: { canonical: `${SITE_URL}/about` } } : {}),
+  openGraph: {
+    title: "About GMCA & KMCA",
+    description:
+      "Learn about the Gayatri Mandir and Kalyan Mandap Cricket Associations, their members, and leadership in Khordha, Odisha.",
+    ...(SITE_URL ? { images: ["/images/gmca-members-hero.jpg"] } : {}),
+  },
+};
 
 const API_URL = process.env.API_URL || "http://localhost:5000";
 
