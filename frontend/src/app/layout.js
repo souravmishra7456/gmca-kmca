@@ -15,6 +15,9 @@ export const metadata = {
     `${APP_FULL_NAME} brings members together through cricket in Khordha, Odisha. View association information, notices, team announcements, fixtures, and public scorecards.`,
   applicationName: "GMCA & KMCA",
   keywords: SITE_KEYWORDS,
+  verification: {
+    google: "vlbin4aTrQE8zViQM6FhohFDbWpx3KUAmM5PsFZBwkw",
+  },
   openGraph: {
     type: "website",
     siteName: "GMCA & KMCA",
