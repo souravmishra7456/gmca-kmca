@@ -1,4 +1,4 @@
-import { Calendar, Loader2, Trash2 } from "lucide-react";
+import { Calendar, FileText, Loader2, Trash2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatDate } from "@/lib/utils";
@@ -9,6 +9,7 @@ export default function NoticeCard({
   date,
   canDelete = false,
   deleting = false,
+  onOpen,
   onDelete,
 }) {
   return (
@@ -42,6 +43,12 @@ export default function NoticeCard({
         <p className="text-sm leading-relaxed text-muted-foreground">
           {description}
         </p>
+        {onOpen && (
+          <Button type="button" variant="outline" size="sm" className="mt-4" onClick={onOpen}>
+            <FileText className="h-4 w-4" />
+            Open notice
+          </Button>
+        )}
       </CardContent>
     </Card>
   );

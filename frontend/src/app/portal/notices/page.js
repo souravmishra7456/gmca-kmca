@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import ConfirmDialog from "@/components/shared/ConfirmDialog";
+import NoticeDocument from "@/components/notices/NoticeDocument";
 import { noticesAPI } from "@/services/api";
 import useAuthStore from "@/store/authStore";
 import { toast } from "sonner";
@@ -25,6 +26,7 @@ export default function NoticesPage() {
   const [sending, setSending] = useState(false);
   const [deletingId, setDeletingId] = useState("");
   const [pendingDelete, setPendingDelete] = useState(null);
+  const [selectedNotice, setSelectedNotice] = useState(null);
 
   useEffect(() => {
     const loadNotices = async () => {
@@ -144,9 +146,11 @@ export default function NoticesPage() {
           notices={notices}
           canDelete={canSend}
           deletingId={deletingId}
+          onOpen={setSelectedNotice}
           onDelete={setPendingDelete}
         />
       )}
+      {selectedNotice && <NoticeDocument notice={selectedNotice} onClose={() => setSelectedNotice(null)} />}
       <ConfirmDialog
         open={Boolean(pendingDelete)}
         onOpenChange={(open) => { if (!open && !deletingId) setPendingDelete(null); }}

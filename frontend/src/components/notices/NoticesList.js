@@ -5,6 +5,7 @@ export default function NoticesList({
   notices,
   canDelete = false,
   deletingId,
+  onOpen,
   onDelete,
 }) {
   if (!notices?.length) {
@@ -24,6 +25,7 @@ export default function NoticesList({
           {...notice}
           canDelete={canDelete}
           deleting={deletingId === notice.id}
+          onOpen={() => onOpen?.(notice)}
           onDelete={() => onDelete?.(notice)}
         />
       ))}

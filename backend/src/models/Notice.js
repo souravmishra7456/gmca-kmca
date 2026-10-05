@@ -19,6 +19,15 @@ const noticeSchema = new mongoose.Schema(
             ref: "User",
             required: true,
         },
+        issuerRole: {
+            type: String,
+            enum: ["chairman", "director"],
+        },
+        noticeNumber: {
+            type: String,
+            unique: true,
+            sparse: true,
+        },
     },
     { timestamps: true }
 );
